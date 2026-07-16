@@ -115,7 +115,7 @@ const FuelList = () => {
 
       {/* Analytics Cards */}
       <Grid container spacing={2} mb={4}>
-        <Grid item size={{ xs: 12, sm: 4 }}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
               <Typography color="text.secondary" gutterBottom>
@@ -127,7 +127,7 @@ const FuelList = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item size={{ xs: 12, sm: 4 }}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
               <Typography color="text.secondary" gutterBottom>
@@ -139,7 +139,7 @@ const FuelList = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item size={{ xs: 12, sm: 4 }}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
               <Typography color="text.secondary" gutterBottom>
@@ -151,7 +151,7 @@ const FuelList = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item size={{ xs: 12 }}>
+        <Grid size={{ xs: 12 }}>
           <DataTable
             columns={[
               { label: 'Date' },

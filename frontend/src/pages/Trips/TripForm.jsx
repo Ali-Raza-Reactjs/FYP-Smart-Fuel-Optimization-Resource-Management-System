@@ -151,10 +151,10 @@ const TripForm = () => {
           {isEditMode ? 'Edit Trip & Route' : 'Schedule Trip & Optimize Route'}
         </Typography>
         <Grid container spacing={4}>
-          <Grid item size={{ xs: 12 }}>
+          <Grid size={{ xs: 12 }}>
             <Box component="form" onSubmit={handleSubmit}>
               <Grid container spacing={3}>
-                <Grid item size={{ xs: 12, md: 3 }}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <Select
                     required
                     id="vehicle"
@@ -168,7 +168,7 @@ const TripForm = () => {
                     ]}
                   />
                 </Grid>
-                <Grid item size={{ xs: 12, md: 3 }}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <LocationSearch
                     required
                     label="Start Location"
@@ -176,7 +176,7 @@ const TripForm = () => {
                     onChange={(data) => handleLocationChange('start', data)}
                   />
                 </Grid>
-                <Grid item size={{ xs: 12, md: 3 }}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <LocationSearch
                     required
                     label="Destination"
@@ -184,7 +184,7 @@ const TripForm = () => {
                     onChange={(data) => handleLocationChange('end', data)}
                   />
                 </Grid>
-                <Grid item size={{ xs: 12, md: 3 }}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <Button
                     fullWidth
                     variant="outlined"
@@ -196,7 +196,7 @@ const TripForm = () => {
                   </Button>
                 </Grid>
 
-                <Grid item size={{ xs: 12, md: 3 }}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <TextField
                     disabled
                     id="distance"
@@ -204,7 +204,7 @@ const TripForm = () => {
                     value={formData.distance}
                   />
                 </Grid>
-                <Grid item size={{ xs: 12, md: 3 }}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <TextField
                     disabled
                     id="estimatedDuration"
@@ -212,7 +212,7 @@ const TripForm = () => {
                     value={formData.estimatedDuration}
                   />
                 </Grid>
-                <Grid item size={{ xs: 12, md: 3 }}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <TextField
                     disabled
                     id="estimatedFuel"
@@ -221,7 +221,7 @@ const TripForm = () => {
                   />
                 </Grid>
 
-                <Grid item size={{ xs: 12, md: 3 }}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <TextField
                     required
                     id="startTime"
@@ -230,10 +230,10 @@ const TripForm = () => {
                     type="datetime-local"
                     value={formData.startTime}
                     onChange={handleChange}
-                    InputLabelProps={{ shrink: true }}
+                    slotProps={{ inputLabel: { shrink: true } }}
                   />
                 </Grid>
-                <Grid item size={{ xs: 12, md: 3 }}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <Select
                     id="status"
                     label="Status"
@@ -255,7 +255,7 @@ const TripForm = () => {
             </Box>
           </Grid>
 
-          <Grid item size={{ xs: 12 }}>
+          <Grid size={{ xs: 12 }}>
             <Box sx={{ height: '100%', minHeight: 500, display: 'flex', flexDirection: 'column' }}>
               <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                 Route Preview

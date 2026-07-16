@@ -108,7 +108,7 @@ const VehicleForm = () => {
         </Typography>
         <Box component="form" onSubmit={handleSubmit}>
           <Grid container spacing={3}>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 id="licensePlate"
@@ -120,7 +120,7 @@ const VehicleForm = () => {
                 inputProps={{ style: { textTransform: 'uppercase' } }}
               />
             </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 id="make"
@@ -131,7 +131,7 @@ const VehicleForm = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 id="model"
@@ -142,7 +142,7 @@ const VehicleForm = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 id="year"
@@ -153,7 +153,7 @@ const VehicleForm = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 id="fuelCapacity"
@@ -164,7 +164,7 @@ const VehicleForm = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Select
                 required
                 id="fuelType"
@@ -175,7 +175,7 @@ const VehicleForm = () => {
                 options={['Petrol', 'Diesel', 'Hybrid', 'EV']}
               />
             </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 id="currentOdometer"
@@ -186,7 +186,7 @@ const VehicleForm = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Select
                 id="status"
                 label="Status"
@@ -196,7 +196,7 @@ const VehicleForm = () => {
                 options={['Active', 'Inactive', 'Maintenance']}
               />
             </Grid>
-            <Grid item size={{ xs: 12 }}>
+            <Grid size={{ xs: 12 }}>
               <Select
                 id="driver"
                 label="Assign Driver (Optional)"

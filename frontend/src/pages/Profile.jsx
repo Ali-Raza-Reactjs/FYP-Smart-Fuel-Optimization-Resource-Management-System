@@ -49,7 +49,7 @@ const Profile = () => {
         </Typography>
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
           <Grid container spacing={3}>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 fullWidth
@@ -60,7 +60,7 @@ const Profile = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 fullWidth
@@ -71,7 +71,7 @@ const Profile = () => {
                 disabled // Email shouldn't be easily changeable in this demo
               />
             </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 id="role"
@@ -81,7 +81,7 @@ const Profile = () => {
                 disabled
               />
             </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 id="phoneNumber"
@@ -91,7 +91,7 @@ const Profile = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item size={{ xs: 12 }}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 id="address"

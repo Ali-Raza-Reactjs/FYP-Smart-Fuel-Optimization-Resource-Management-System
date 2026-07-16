@@ -104,19 +104,19 @@ const FuelForm = () => {
       </Typography>
       <Box component="form" onSubmit={handleSubmit} encType="multipart/form-data">
         <Grid container spacing={3}>
-          <Grid item size={{ xs: 12, sm: 6 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               required
               id="date"
               label="Date"
               name="date"
               type="date"
-              InputLabelProps={{ shrink: true }}
+              slotProps={{ inputLabel: { shrink: true } }}
               value={formData.date}
               onChange={handleChange}
             />
           </Grid>
-          <Grid item size={{ xs: 12, sm: 6 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               required
               id="odometerReading"
@@ -128,7 +128,7 @@ const FuelForm = () => {
               autoFocus
             />
           </Grid>
-          <Grid item size={{ xs: 12, sm: 6 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               required
               id="liters"
@@ -140,7 +140,7 @@ const FuelForm = () => {
               onChange={handleChange}
             />
           </Grid>
-          <Grid item size={{ xs: 12, sm: 6 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               required
               id="cost"
@@ -152,7 +152,7 @@ const FuelForm = () => {
               onChange={handleChange}
             />
           </Grid>
-          <Grid item size={{ xs: 12 }}>
+          <Grid size={{ xs: 12 }}>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               Upload Receipt (Optional)
             </Typography>

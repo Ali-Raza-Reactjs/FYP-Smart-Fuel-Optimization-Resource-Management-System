@@ -95,7 +95,7 @@ const BudgetList = () => {
             else if (isWarning) barColor = 'warning';
 
             return (
-              <Grid item size={{ xs: 12, md: 6 }} key={budget._id}>
+              <Grid size={{ xs: 12, md: 6 }} key={budget._id}>
                 <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%', position: 'relative' }}>
                   <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
                     <IconButton component={RouterLink} to={`/budgets/edit/${budget._id}`} color="primary" size="small">

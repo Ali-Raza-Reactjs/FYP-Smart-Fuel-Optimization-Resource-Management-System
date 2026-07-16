@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, TextField, List, ListItem, ListItemText, ListItemIcon, CircularProgress, Paper, InputAdornment, ClickAwayListener } from '@mui/material';
+import { Box, TextField, List, ListItem, ListItemButton, ListItemText, ListItemIcon, CircularProgress, Paper, InputAdornment, ClickAwayListener } from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import SearchIcon from '@mui/icons-material/Search';
 
@@ -116,8 +116,7 @@ const LocationSearch = ({ label, value, onChange, required, error, helperText })
                 </ListItem>
               ) : (
                 results.map((place) => (
-                  <ListItem 
-                    button 
+                  <ListItemButton 
                     key={place.place_id} 
                     onClick={() => handleSelect(place)}
                     sx={{ '&:hover': { backgroundColor: 'action.hover' } }}
@@ -129,7 +128,7 @@ const LocationSearch = ({ label, value, onChange, required, error, helperText })
                       primary={place.display_name} 
                       primaryTypographyProps={{ variant: 'body2', noWrap: false }}
                     />
-                  </ListItem>
+                  </ListItemButton>
                 ))
               )}
             </List>

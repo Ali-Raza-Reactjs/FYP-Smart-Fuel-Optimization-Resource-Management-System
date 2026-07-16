@@ -103,7 +103,7 @@ const Register = () => {
 
           <form onSubmit={handleSubmit}>
             <Grid container spacing={3}>
-              <Grid item size={{ xs: 12 }}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   required
                   id="name"
@@ -115,7 +115,7 @@ const Register = () => {
                   startIcon={<PersonOutlineOutlinedIcon sx={{ color: 'text.secondary' }} />}
                 />
               </Grid>
-              <Grid item size={{ xs: 12 }}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   required
                   id="email"
@@ -127,7 +127,7 @@ const Register = () => {
                   startIcon={<EmailOutlinedIcon sx={{ color: 'text.secondary' }} />}
                 />
               </Grid>
-              <Grid item size={{ xs: 12 }}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   required
                   name="password"
@@ -144,7 +144,7 @@ const Register = () => {
                   }
                 />
               </Grid>
-              <Grid item size={{ xs: 12 }}>
+              <Grid size={{ xs: 12 }}>
                 <Select
                   required
                   name="role"
@@ -158,7 +158,7 @@ const Register = () => {
                   ]}
                 />
               </Grid>
-              <Grid item size={{ xs: 12 }}>
+              <Grid size={{ xs: 12 }}>
                 <Button
                   type="submit"
                   fullWidth

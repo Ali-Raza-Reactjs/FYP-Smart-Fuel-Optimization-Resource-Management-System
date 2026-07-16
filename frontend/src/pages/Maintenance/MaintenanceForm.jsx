@@ -94,19 +94,19 @@ const MaintenanceForm = () => {
       </Typography>
       <Box component="form" onSubmit={handleSubmit}>
         <Grid container spacing={3}>
-          <Grid item size={{ xs: 12, sm: 6 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               required
               id="date"
               label="Date"
               name="date"
               type="date"
-              InputLabelProps={{ shrink: true }}
+              slotProps={{ inputLabel: { shrink: true } }}
               value={formData.date}
               onChange={handleChange}
             />
           </Grid>
-          <Grid item size={{ xs: 12, sm: 6 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               required
               id="performedBy"
@@ -116,7 +116,7 @@ const MaintenanceForm = () => {
               onChange={handleChange}
             />
           </Grid>
-          <Grid item size={{ xs: 12 }}>
+          <Grid size={{ xs: 12 }}>
             <TextField
               required
               id="description"
@@ -129,7 +129,7 @@ const MaintenanceForm = () => {
               autoFocus
             />
           </Grid>
-          <Grid item size={{ xs: 12, sm: 4 }}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <TextField
               required
               id="cost"
@@ -141,7 +141,7 @@ const MaintenanceForm = () => {
               onChange={handleChange}
             />
           </Grid>
-          <Grid item size={{ xs: 12, sm: 4 }}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <TextField
               required
               id="odometerReading"
@@ -152,7 +152,7 @@ const MaintenanceForm = () => {
               onChange={handleChange}
             />
           </Grid>
-          <Grid item size={{ xs: 12, sm: 4 }}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <Select
               required
               id="status"

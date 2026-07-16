@@ -28,7 +28,21 @@ app.use(
 );
 
 // Security: Helmet sets secure HTTP headers
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        connectSrc: ["'self'", "https://nominatim.openstreetmap.org"],
+        imgSrc: ["'self'", "data:", "blob:", "https://*.tile.openstreetmap.org", "https://unpkg.com"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com"],
+        fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
+      },
+    },
+    crossOriginOpenerPolicy: false,
+  })
+);
 
 // Middleware
 app.use(express.json());

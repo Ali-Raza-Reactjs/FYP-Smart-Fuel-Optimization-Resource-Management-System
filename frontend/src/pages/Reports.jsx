@@ -48,7 +48,7 @@ const Reports = () => {
         </Typography>
         <Box component="form" onSubmit={handleExport} sx={{ mt: 3 }}>
           <Grid container spacing={4}>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 fullWidth
@@ -56,12 +56,12 @@ const Reports = () => {
                 label="Start Date"
                 name="startDate"
                 type="date"
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
               />
             </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 fullWidth
@@ -69,12 +69,12 @@ const Reports = () => {
                 label="End Date"
                 name="endDate"
                 type="date"
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
               />
             </Grid>
-            <Grid item size={{ xs: 12 }}>
+            <Grid size={{ xs: 12 }}>
               <Button
                 type="submit"
                 variant="contained"

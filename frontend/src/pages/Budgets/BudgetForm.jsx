@@ -87,7 +87,7 @@ const BudgetForm = () => {
         </Typography>
         <Box component="form" onSubmit={handleSubmit}>
           <Grid container spacing={3}>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Select
                 required
                 id="month"
@@ -99,7 +99,7 @@ const BudgetForm = () => {
                 options={monthNames.map((name, index) => ({ value: index + 1, label: name }))}
               />
             </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Select
                 required
                 id="year"
@@ -111,7 +111,7 @@ const BudgetForm = () => {
                 options={years.map(year => ({ value: year, label: year.toString() }))}
               />
             </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 id="totalLimit"
@@ -124,7 +124,7 @@ const BudgetForm = () => {
                 autoFocus
               />
             </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 id="alertThreshold"

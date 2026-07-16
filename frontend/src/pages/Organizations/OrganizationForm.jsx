@@ -88,7 +88,7 @@ const OrganizationForm = () => {
         </Typography>
         <Box component="form" onSubmit={handleSubmit}>
           <Grid container spacing={3}>
-            <Grid item size={{ xs: 12 }}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 required
                 id="name"
@@ -99,7 +99,7 @@ const OrganizationForm = () => {
                 autoFocus
               />
             </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 id="contactEmail"
@@ -110,7 +110,7 @@ const OrganizationForm = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 id="contactPhone"
@@ -120,7 +120,7 @@ const OrganizationForm = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item size={{ xs: 12 }}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 required
                 id="address"

@@ -95,11 +95,11 @@ const Dashboard = () => {
   const renderSkeletons = () => (
     <Grid container spacing={2}>
       {[1, 2, 3, 4].map(i => (
-        <Grid item size={{ xs: 12, sm: 6, md: 3 }} key={i}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
           <Skeleton variant="rounded" height={140} />
         </Grid>
       ))}
-      <Grid item size={{ xs: 12 }}>
+      <Grid size={{ xs: 12 }}>
         <Skeleton variant="rounded" height={400} />
       </Grid>
     </Grid>
@@ -137,7 +137,7 @@ const Dashboard = () => {
           ) : (
             <>
               <Grid container spacing={2} mb={4}>
-                <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <StatCard
                     title="Active Vehicles"
                     value={`${stats?.activeVehicles || 0} / ${stats?.totalVehicles || 0}`}
@@ -145,7 +145,7 @@ const Dashboard = () => {
                     color={theme.palette.primary.main}
                   />
                 </Grid>
-                <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <StatCard
                     title="Total Drivers"
                     value={stats?.totalDrivers || 0}
@@ -153,7 +153,7 @@ const Dashboard = () => {
                     color={theme.palette.secondary.main}
                   />
                 </Grid>
-                <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <StatCard
                     title="Active Trips"
                     value={stats?.activeTrips || 0}
@@ -161,7 +161,7 @@ const Dashboard = () => {
                     color={theme.palette.info.main}
                   />
                 </Grid>
-                <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <StatCard
                     title="MTD Spend"
                     value={`$${(stats?.currentMonthSpend ?? 0).toFixed(2)}`}
@@ -171,7 +171,7 @@ const Dashboard = () => {
                   />
                 </Grid>
 
-                <Grid item size={{ xs: 12, md: stats?.latestTrip ? 8 : 12 }}>
+                <Grid size={{ xs: 12, md: stats?.latestTrip ? 8 : 12 }}>
                   <Card elevation={0} sx={{ p: 0, overflow: 'hidden', height: '100%' }}>
                     <Box sx={{ p: 3, borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Box>
@@ -216,7 +216,7 @@ const Dashboard = () => {
                 </Grid>
 
                 {stats?.latestTrip && (
-                  <Grid item size={{ xs: 12, md: 4 }}>
+                  <Grid size={{ xs: 12, md: 4 }}>
                     <Card elevation={0} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                       <Box sx={{ p: 3, borderBottom: `1px solid ${theme.palette.divider}` }}>
                         <Typography variant="h6" fontWeight="bold" color="text.primary">
@@ -249,7 +249,7 @@ const Dashboard = () => {
         ) : (
           // Driver View
           <Grid container spacing={2}>
-            <Grid item size={{ xs: 12, md: 4 }}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Card elevation={0} sx={{ height: '100%', borderTop: `4px solid ${theme.palette.primary.main}` }}>
                 <CardContent sx={{ p: 3 }}>
                   <Typography variant="subtitle1" fontWeight="bold" textTransform="uppercase" color="text.secondary" gutterBottom letterSpacing={0.5}>
@@ -292,7 +292,7 @@ const Dashboard = () => {
               </Card>
             </Grid>
 
-            <Grid item size={{ xs: 12, md: 8 }}>
+            <Grid size={{ xs: 12, md: 8 }}>
               <Card elevation={0} sx={{ height: '100%' }}>
                 <Box sx={{ p: 3, borderBottom: `1px solid ${theme.palette.divider}` }}>
                   <Typography variant="h6" fontWeight="bold" color="text.primary">
