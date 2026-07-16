@@ -11,7 +11,21 @@ connectDB();
 const app = express();
 
 // Frontend static files
-app.use(express.static(path.join(__dirname, "dist")));
+app.use(
+  express.static(path.join(__dirname, "dist"), {
+    setHeaders: (res, path, stat) => {
+      if (path.endsWith(".html")) {
+        // Prevent caching of index.html so users always get the latest version
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+      } else {
+        // Cache static assets (JS, CSS, images) for 1 year since Vite hashes filenames
+        res.setHeader("Cache-Control", "public, max-age=31536000");
+      }
+    },
+  })
+);
 
 // Security: Helmet sets secure HTTP headers
 app.use(helmet());
@@ -79,9 +93,20 @@ app.use("/api/notifications", require("./src/routes/notification.routes"));
 app.use("/api/reports", require("./src/routes/report.routes"));
 app.use("/api/routes", require("./src/routes/route.routes"));
 
+// Return 404 for missing static assets to prevent serving index.html for old JS/CSS files
+app.use("/assets", (req, res) => {
+  res.status(404).send("Not found");
+});
+
 // React/Vite catch-all route (must be after all API routes)
 app.get(/(.*)/, (req, res) => {
-  res.sendFile(path.join(__dirname, "dist/index.html"));
+  res.sendFile(path.join(__dirname, "dist/index.html"), {
+    headers: {
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
+    },
+  });
 });
 
 // Global error handler
