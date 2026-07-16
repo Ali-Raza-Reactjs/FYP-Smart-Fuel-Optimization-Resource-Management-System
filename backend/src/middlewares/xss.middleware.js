@@ -1,11 +1,23 @@
-let sanitizeHtml;
+/**
+ * XSS Protection Middleware
+ * Strips all HTML tags from request data to prevent XSS attacks.
+ */
+
+const stripHtml = (str) => {
+  return str
+    .replace(/<[^>]*>/g, "") // Remove all HTML tags
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#x2F;/g, "/")
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ""); // Remove script tags
+};
 
 const sanitize = (obj) => {
   if (typeof obj === "string") {
-    return sanitizeHtml(obj, {
-      allowedTags: [], // Strip all HTML tags
-      allowedAttributes: {},
-    });
+    return stripHtml(obj);
   }
   if (Array.isArray(obj)) {
     return obj.map((item) => sanitize(item));
@@ -22,20 +34,12 @@ const sanitize = (obj) => {
   return obj;
 };
 
-const xssClean = async (req, res, next) => {
-  try {
-    if (!sanitizeHtml) {
-      const mod = await import("sanitize-html");
-      sanitizeHtml = mod.default || mod;
-    }
-
-    if (req.body) req.body = sanitize(req.body);
-    if (req.query) req.query = sanitize(req.query);
-    if (req.params) req.params = sanitize(req.params);
-    next();
-  } catch (err) {
-    next(err);
-  }
+const xssClean = (req, res, next) => {
+  if (req.body) req.body = sanitize(req.body);
+  if (req.query) req.query = sanitize(req.query);
+  if (req.params) req.params = sanitize(req.params);
+  next();
 };
 
 module.exports = xssClean;
+
