@@ -10,13 +10,8 @@ connectDB();
 
 const app = express();
 
-app.get("/", (req, res) => {
-  res.json({
-    message: "Welcome to Smart Fuel Optimization & Resource Management System",
-  });
-});
 // Frontend static files
-app.use(express.static(path.join(__dirname, "../frontend/dist")));
+app.use(express.static(path.join(__dirname, "dist")));
 
 // Security: Helmet sets secure HTTP headers
 app.use(helmet());
@@ -78,7 +73,7 @@ app.use("/api/routes", require("./src/routes/route.routes"));
 
 // React/Vite catch-all route (must be after all API routes)
 app.get(/(.*)/, (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+  res.sendFile(path.join(__dirname, "dist/index.html"));
 });
 
 // Global error handler
