@@ -10,6 +10,11 @@ connectDB();
 
 const app = express();
 
+app.get("/", (req, res) => {
+  res.json({
+    message: "Welcome to Smart Fuel Optimization & Resource Management System",
+  });
+});
 // Frontend static files
 app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
