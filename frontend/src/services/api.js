@@ -1,4 +1,5 @@
 import axios from "axios";
+console.log(import.meta.env.DEV);
 const api = axios.create({
   baseURL: import.meta.env.DEV
     ? "http://localhost:5000/api"
