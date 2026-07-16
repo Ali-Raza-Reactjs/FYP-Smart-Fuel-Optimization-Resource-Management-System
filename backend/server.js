@@ -21,8 +21,16 @@ app.use(express.json());
 
 // Security: Restrict CORS to the configured frontend origin
 const allowedOrigins = process.env.CLIENT_URL
-  ? [...process.env.CLIENT_URL.split(","), "http://localhost:5000"]
-  : ["http://localhost:5173", "http://localhost:5000"];
+  ? [
+      ...process.env.CLIENT_URL.split(","),
+      "http://localhost:5000",
+      "https://fyp-smart-fuel-optimization-resourc.vercel.app",
+    ]
+  : [
+      "http://localhost:5173",
+      "http://localhost:5000",
+      "https://fyp-smart-fuel-optimization-resourc.vercel.app",
+    ];
 app.use(
   cors({
     origin: (origin, callback) => {
