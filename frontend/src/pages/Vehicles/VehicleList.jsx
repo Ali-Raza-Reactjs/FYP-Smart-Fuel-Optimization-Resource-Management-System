@@ -87,7 +87,7 @@ const VehicleList = () => {
     }
   };
 
-  if (!loading) {
+  if (loading) {
     return <PageLoader text="Loading vehicles..." />;
   }
 
