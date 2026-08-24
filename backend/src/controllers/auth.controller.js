@@ -1,5 +1,5 @@
-const User = require('../models/User');
-const jwt = require('jsonwebtoken');
+const User = require("../models/User");
+const jwt = require("jsonwebtoken");
 
 // Generate JWT
 const generateToken = (id) => {
@@ -16,14 +16,14 @@ exports.register = async (req, res, next) => {
     const { name, email, password, role, contactNumber } = req.body;
 
     // Normalize email to lowercase
-    const normalizedEmail = email ? email.toLowerCase().trim() : '';
+    const normalizedEmail = email ? email.toLowerCase().trim() : "";
 
     // Check if user exists
     const userExists = await User.findOne({ email: normalizedEmail });
 
     if (userExists) {
       res.status(400);
-      throw new Error('User already exists');
+      throw new Error("User already exists");
     }
 
     // Create user
@@ -31,11 +31,11 @@ exports.register = async (req, res, next) => {
       name,
       email: normalizedEmail,
       password,
-      role: role || 'Individual',
+      role: role || "Individual",
       profile: {
-        phoneNumber: contactNumber || '',
-        address: ''
-      }
+        phoneNumber: contactNumber || "",
+        address: "",
+      },
     });
 
     if (user) {
@@ -49,7 +49,7 @@ exports.register = async (req, res, next) => {
       });
     } else {
       res.status(400);
-      throw new Error('Invalid user data');
+      throw new Error("Invalid user data");
     }
   } catch (error) {
     next(error);
@@ -64,14 +64,16 @@ exports.login = async (req, res, next) => {
     const { email, password } = req.body;
 
     // Normalize email to lowercase
-    const normalizedEmail = email ? email.toLowerCase().trim() : '';
+    const normalizedEmail = email ? email.toLowerCase().trim() : "";
 
     // Check for user email
-    const user = await User.findOne({ email: normalizedEmail }).select('+password');
+    const user = await User.findOne({ email: normalizedEmail }).select(
+      "+password",
+    );
 
     if (!user) {
       res.status(401);
-      throw new Error('Invalid credentials');
+      throw new Error("Invalid credentials");
     }
 
     // Check if password matches
@@ -79,7 +81,7 @@ exports.login = async (req, res, next) => {
 
     if (!isMatch) {
       res.status(401);
-      throw new Error('Invalid credentials');
+      throw new Error("Invalid credentials");
     }
 
     res.json({
@@ -100,31 +102,33 @@ exports.login = async (req, res, next) => {
 exports.changePassword = async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    
+
     // User is attached to req by the protect middleware
-    const user = await User.findById(req.user._id).select('+password');
+    const user = await User.findById(req.user._id).select("+password");
 
     if (!user) {
       res.status(404);
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     // Check current password
     const isMatch = await user.matchPassword(currentPassword);
     if (!isMatch) {
       res.status(401);
-      throw new Error('Incorrect current password');
+      throw new Error("Incorrect current password");
     }
 
     if (newPassword.length < 6) {
       res.status(400);
-      throw new Error('New password must be at least 6 characters');
+      throw new Error("New password must be at least 6 characters");
     }
 
     user.password = newPassword;
     await user.save();
 
-    res.status(200).json({ success: true, message: 'Password updated successfully' });
+    res
+      .status(200)
+      .json({ success: true, message: "Password updated successfully" });
   } catch (error) {
     next(error);
   }
@@ -135,9 +139,8 @@ exports.changePassword = async (req, res, next) => {
 // @access  Private
 exports.logout = async (req, res, next) => {
   try {
-    res.status(200).json({ success: true, message: 'Logged out successfully' });
+    res.status(200).json({ success: true, message: "Logged out successfully" });
   } catch (error) {
     next(error);
   }
 };
-

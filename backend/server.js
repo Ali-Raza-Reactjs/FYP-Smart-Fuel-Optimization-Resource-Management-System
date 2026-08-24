@@ -5,9 +5,9 @@ const cors = require("cors");
 const helmet = require("helmet");
 const mongoSanitize = require("express-mongo-sanitize");
 const connectDB = require("./src/config/db");
-// Connect to database
-connectDB();
-
+const { createFirstAdmin } = require("./script/script.js");
+// Connect to database and seed admin
+connectDB().then(createFirstAdmin);
 const app = express();
 
 // Frontend static files
@@ -16,7 +16,10 @@ app.use(
     setHeaders: (res, path, stat) => {
       if (path.endsWith(".html")) {
         // Prevent caching of index.html so users always get the latest version
-        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+        res.setHeader(
+          "Cache-Control",
+          "no-store, no-cache, must-revalidate, proxy-revalidate",
+        );
         res.setHeader("Pragma", "no-cache");
         res.setHeader("Expires", "0");
       } else {
@@ -24,7 +27,7 @@ app.use(
         res.setHeader("Cache-Control", "public, max-age=31536000");
       }
     },
-  })
+  }),
 );
 
 // Security: Helmet sets secure HTTP headers
@@ -34,14 +37,25 @@ app.use(
       directives: {
         defaultSrc: ["'self'"],
         connectSrc: ["'self'", "https://nominatim.openstreetmap.org"],
-        imgSrc: ["'self'", "data:", "blob:", "https://*.tile.openstreetmap.org", "https://unpkg.com"],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "blob:",
+          "https://*.tile.openstreetmap.org",
+          "https://unpkg.com",
+        ],
         scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com"],
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://fonts.googleapis.com",
+          "https://unpkg.com",
+        ],
         fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
       },
     },
     crossOriginOpenerPolicy: false,
-  })
+  }),
 );
 
 // Middleware
@@ -117,8 +131,8 @@ app.get(/(.*)/, (req, res) => {
   res.sendFile(path.join(__dirname, "dist/index.html"), {
     headers: {
       "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-      "Pragma": "no-cache",
-      "Expires": "0",
+      Pragma: "no-cache",
+      Expires: "0",
     },
   });
 });
