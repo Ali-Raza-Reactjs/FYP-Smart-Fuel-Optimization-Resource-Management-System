@@ -6,8 +6,9 @@ const authRoutes = require('../src/routes/auth.routes');
 const errorMiddleware = require('../src/middlewares/error.middleware');
 const User = require('../src/models/User');
 
+const path = require('path');
 // Setup express app for testing without starting the full server
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 const app = express();
 app.use(express.json());
 app.use('/api/auth', authRoutes);

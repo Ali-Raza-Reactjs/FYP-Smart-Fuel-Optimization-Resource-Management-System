@@ -1,24 +1,24 @@
 const mongoose = require('mongoose');
 
 const VehicleSchema = new mongoose.Schema({
-  licensePlate: {
+  vehicleName: {
     type: String,
-    required: [true, 'Please add a license plate'],
+    required: [true, 'Please add a vehicle name']
+  },
+  registrationNumber: {
+    type: String,
+    required: [true, 'Please add a registration number'],
     unique: true,
     trim: true,
     uppercase: true
   },
-  make: {
+  manufacturer: {
     type: String,
-    required: [true, 'Please add vehicle make (e.g. Toyota)']
+    required: [true, 'Please add a manufacturer/company']
   },
-  model: {
-    type: String,
-    required: [true, 'Please add vehicle model (e.g. Corolla)']
-  },
-  year: {
+  modelYear: {
     type: Number,
-    required: [true, 'Please add vehicle year']
+    required: [true, 'Please add a model year']
   },
   fuelCapacity: {
     type: Number,
@@ -26,11 +26,11 @@ const VehicleSchema = new mongoose.Schema({
   },
   fuelEfficiency: {
     type: Number,
-    default: 8 // default 8 Liters / 100km
+    required: [true, 'Please add fuel efficiency in km/liter']
   },
   fuelType: {
     type: String,
-    enum: ['Petrol', 'Diesel', 'EV', 'Hybrid'],
+    enum: ['Petrol', 'Diesel', 'Electric'],
     required: [true, 'Please add fuel type']
   },
   status: {
@@ -45,16 +45,47 @@ const VehicleSchema = new mongoose.Schema({
   organization: {
     type: mongoose.Schema.ObjectId,
     ref: 'Organization',
-    required: true
+    required: false
   },
   driver: {
     type: mongoose.Schema.ObjectId,
     ref: 'User',
-    default: null // Can be unassigned initially
+    default: null
+  },
+  owner: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
+    required: [true, 'Please add an owner']
+  },
+  // Backward compatibility fields for other features
+  licensePlate: {
+    type: String,
+    trim: true,
+    uppercase: true
+  },
+  make: {
+    type: String
+  },
+  model: {
+    type: String
+  },
+  year: {
+    type: Number
   },
   createdAt: {
     type: Date,
     default: Date.now
+  }
+});
+
+// Auto-sync fields for compatibility
+VehicleSchema.pre('validate', function(next) {
+  if (this.registrationNumber) this.licensePlate = this.registrationNumber;
+  if (this.manufacturer) this.make = this.manufacturer;
+  if (this.vehicleName) this.model = this.vehicleName;
+  if (this.modelYear) this.year = this.modelYear;
+  if (typeof next === 'function') {
+    next();
   }
 });
 

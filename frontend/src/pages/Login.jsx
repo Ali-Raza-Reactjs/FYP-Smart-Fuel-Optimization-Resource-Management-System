@@ -14,6 +14,7 @@ const Login = () => {
   const theme = useTheme();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -23,7 +24,9 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     const success = await login(formData);
+    setLoading(false);
     if (success) {
       navigate('/dashboard');
     }
@@ -134,6 +137,7 @@ const Login = () => {
                 type="submit"
                 fullWidth
                 size="large"
+                loading={loading}
               >
                 Sign In
               </Button>

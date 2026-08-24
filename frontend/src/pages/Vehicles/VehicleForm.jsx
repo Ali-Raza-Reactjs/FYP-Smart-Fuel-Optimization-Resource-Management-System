@@ -15,11 +15,12 @@ const VehicleForm = () => {
   const { user } = useContext(AuthContext);
 
   const [formData, setFormData] = useState({
-    licensePlate: '',
-    make: '',
-    model: '',
-    year: new Date().getFullYear(),
+    vehicleName: '',
+    registrationNumber: '',
+    manufacturer: '',
+    modelYear: new Date().getFullYear(),
     fuelCapacity: '',
+    fuelEfficiency: '',
     fuelType: 'Petrol',
     status: 'Active',
     driver: '',
@@ -27,10 +28,11 @@ const VehicleForm = () => {
   });
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // Only Admins and Managers can access this form
-    if (user && user.role !== 'Admin' && user.role !== 'Manager') {
+    // Only Admins, Managers, and Individuals can access this form
+    if (user && user.role !== 'Admin' && user.role !== 'Manager' && user.role !== 'Individual') {
       navigate('/vehicles');
       toast.error('Unauthorized access');
       return;
@@ -38,19 +40,23 @@ const VehicleForm = () => {
 
     const fetchData = async () => {
       try {
-        const driversData = await vehicleService.getAvailableDrivers();
-        setDrivers(driversData);
+        // Skip driver list fetch for individual users
+        if (user && user.role !== 'Individual') {
+          const driversData = await vehicleService.getAvailableDrivers();
+          setDrivers(driversData);
+        }
 
         if (isEditMode) {
           const vehicle = await vehicleService.getVehicle(id);
           setFormData({
-            licensePlate: vehicle.licensePlate,
-            make: vehicle.make,
-            model: vehicle.model,
-            year: vehicle.year,
-            fuelCapacity: vehicle.fuelCapacity,
-            fuelType: vehicle.fuelType,
-            status: vehicle.status,
+            vehicleName: vehicle.vehicleName || vehicle.model || '',
+            registrationNumber: vehicle.registrationNumber || vehicle.licensePlate || '',
+            manufacturer: vehicle.manufacturer || vehicle.make || '',
+            modelYear: vehicle.modelYear || vehicle.year || new Date().getFullYear(),
+            fuelCapacity: vehicle.fuelCapacity || '',
+            fuelEfficiency: vehicle.fuelEfficiency || '',
+            fuelType: vehicle.fuelType || 'Petrol',
+            status: vehicle.status || 'Active',
             driver: vehicle.driver ? vehicle.driver._id : '',
             currentOdometer: vehicle.currentOdometer || 0
           });
@@ -72,6 +78,7 @@ const VehicleForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       const payload = { ...formData };
       if (payload.driver === '') {
@@ -89,6 +96,8 @@ const VehicleForm = () => {
     } catch (error) {
       const message = error.response?.data?.message || 'Action failed';
       toast.error(message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -111,45 +120,57 @@ const VehicleForm = () => {
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
-                id="licensePlate"
-                label="License Plate"
-                name="licensePlate"
-                value={formData.licensePlate}
+                id="vehicleName"
+                label="Vehicle Name"
+                name="vehicleName"
+                placeholder="e.g. Corolla"
+                value={formData.vehicleName}
                 onChange={handleChange}
                 autoFocus
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                required
+                id="registrationNumber"
+                label="Registration Number"
+                name="registrationNumber"
+                placeholder="e.g. ABC-1234"
+                value={formData.registrationNumber}
+                onChange={handleChange}
                 inputProps={{ style: { textTransform: 'uppercase' } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
-                id="make"
-                label="Make"
-                name="make"
+                id="manufacturer"
+                label="Manufacturer/Company"
+                name="manufacturer"
                 placeholder="e.g. Toyota"
-                value={formData.make}
+                value={formData.manufacturer}
                 onChange={handleChange}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
-                id="model"
-                label="Model"
-                name="model"
-                placeholder="e.g. Corolla"
-                value={formData.model}
-                onChange={handleChange}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                required
-                id="year"
-                label="Year"
-                name="year"
+                id="modelYear"
+                label="Model Year"
+                name="modelYear"
                 type="number"
-                value={formData.year}
+                value={formData.modelYear}
+                onChange={handleChange}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                required
+                id="fuelEfficiency"
+                label="Fuel Efficiency (km/liter)"
+                name="fuelEfficiency"
+                type="number"
+                value={formData.fuelEfficiency}
                 onChange={handleChange}
               />
             </Grid>
@@ -157,7 +178,7 @@ const VehicleForm = () => {
               <TextField
                 required
                 id="fuelCapacity"
-                label="Fuel Capacity (Liters)"
+                label="Fuel Tank Capacity (Liters)"
                 name="fuelCapacity"
                 type="number"
                 value={formData.fuelCapacity}
@@ -172,7 +193,7 @@ const VehicleForm = () => {
                 name="fuelType"
                 value={formData.fuelType}
                 onChange={handleChange}
-                options={['Petrol', 'Diesel', 'Hybrid', 'EV']}
+                options={['Petrol', 'Diesel', 'Electric']}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -186,35 +207,39 @@ const VehicleForm = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <Select
-                id="status"
-                label="Status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                options={['Active', 'Inactive', 'Maintenance']}
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <Select
-                id="driver"
-                label="Assign Driver (Optional)"
-                name="driver"
-                value={formData.driver}
-                onChange={handleChange}
-                options={[
-                  { value: '', label: 'Unassigned' },
-                  ...drivers.map(d => ({ value: d._id, label: `${d.name} (${d.email})` }))
-                ]}
-              />
-            </Grid>
+            {user?.role !== 'Individual' && (
+              <>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Select
+                    id="status"
+                    label="Status"
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                    options={['Active', 'Inactive', 'Maintenance']}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <Select
+                    id="driver"
+                    label="Assign Driver (Optional)"
+                    name="driver"
+                    value={formData.driver}
+                    onChange={handleChange}
+                    options={[
+                      { value: '', label: 'Unassigned' },
+                      ...drivers.map(d => ({ value: d._id, label: `${d.name} (${d.email})` }))
+                    ]}
+                  />
+                </Grid>
+              </>
+            )}
           </Grid>
           <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
             <Button variant="outlined" color="inherit" onClick={() => navigate('/vehicles')}>
               Cancel
             </Button>
-            <Button type="submit">
+            <Button type="submit" loading={submitting}>
               {isEditMode ? 'Update Vehicle' : 'Create Vehicle'}
             </Button>
           </Box>

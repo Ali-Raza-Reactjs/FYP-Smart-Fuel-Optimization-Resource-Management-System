@@ -12,28 +12,37 @@ exports.getDashboardStats = async (req, res, next) => {
     const { role, organization, _id } = req.user;
     let data = {};
 
-    if (role === 'Admin' || role === 'Manager') {
-      if (!organization) {
-        return res.status(200).json({
-          hasOrganization: false,
-          totalVehicles: 0,
-          activeVehicles: 0,
-          totalDrivers: 0,
-          activeTrips: 0,
-          currentMonthSpend: 0,
-          historicalSpend: []
-        });
+    if (role === 'Admin' || role === 'Manager' || role === 'Individual') {
+      let vehicleIds = [];
+      let totalVehicles = 0;
+      let activeVehicles = 0;
+      let totalDrivers = 0;
+
+      if (role === 'Individual') {
+        const vehicles = await Vehicle.find({ owner: _id }).select('_id status');
+        vehicleIds = vehicles.map(v => v._id);
+        totalVehicles = vehicles.length;
+        activeVehicles = vehicles.filter(v => v.status === 'Active').length;
+        totalDrivers = 0;
+      } else {
+        if (!organization) {
+          return res.status(200).json({
+            hasOrganization: false,
+            totalVehicles: 0,
+            activeVehicles: 0,
+            totalDrivers: 0,
+            activeTrips: 0,
+            currentMonthSpend: 0,
+            historicalSpend: []
+          });
+        }
+
+        const vehicles = await Vehicle.find({ organization }).select('_id status');
+        vehicleIds = vehicles.map(v => v._id);
+        totalVehicles = vehicles.length;
+        activeVehicles = vehicles.filter(v => v.status === 'Active').length;
+        totalDrivers = await User.countDocuments({ organization, role: 'Driver' });
       }
-
-      // 1. Get total vehicles
-      const vehicles = await Vehicle.find({ organization }).select('_id status');
-      const vehicleIds = vehicles.map(v => v._id);
-      
-      const totalVehicles = vehicles.length;
-      const activeVehicles = vehicles.filter(v => v.status === 'Active').length;
-
-      // 2. Get total drivers
-      const totalDrivers = await User.countDocuments({ organization, role: 'Driver' });
 
       // 3. Get active trips
       const activeTrips = await Trip.countDocuments({ vehicle: { $in: vehicleIds }, status: 'In Transit' });

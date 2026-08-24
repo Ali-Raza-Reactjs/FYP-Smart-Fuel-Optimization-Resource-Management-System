@@ -25,6 +25,7 @@ import Reports from './pages/Reports';
 import Dashboard from './pages/Dashboard';
 import Unauthorized from './pages/Unauthorized';
 import ProtectedRoute from './routes/ProtectedRoutes';
+import UserManagement from './pages/Admin/UserManagement';
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorBoundaryFallback from './components/common/ErrorBoundaryFallback';
 import theme from './theme';
@@ -58,10 +59,14 @@ function App() {
                   <Route path="/dashboard" element={<Dashboard />} />
                 </Route>
 
-                {/* Protected Routes - Admin & Manager only */}
-                <Route element={<ProtectedRoute allowedRoles={['Admin', 'Manager']} />}>
+                {/* Protected Routes - Admin, Manager & Individual */}
+                <Route element={<ProtectedRoute allowedRoles={['Admin', 'Manager', 'Individual']} />}>
                   <Route path="/vehicles/new" element={<VehicleForm />} />
                   <Route path="/vehicles/edit/:id" element={<VehicleForm />} />
+                </Route>
+
+                {/* Protected Routes - Admin & Manager only */}
+                <Route element={<ProtectedRoute allowedRoles={['Admin', 'Manager']} />}>
                   <Route path="/vehicles/:vehicleId/maintenance" element={<MaintenanceList />} />
                   <Route path="/vehicles/:vehicleId/maintenance/new" element={<MaintenanceForm />} />
                   <Route path="/vehicles/:vehicleId/maintenance/edit/:id" element={<MaintenanceForm />} />
@@ -77,6 +82,7 @@ function App() {
                   <Route path="/organizations" element={<OrganizationList />} />
                   <Route path="/organizations/new" element={<OrganizationForm />} />
                   <Route path="/organizations/edit/:id" element={<OrganizationForm />} />
+                  <Route path="/admin/users" element={<UserManagement />} />
                 </Route>
               </Route>
 

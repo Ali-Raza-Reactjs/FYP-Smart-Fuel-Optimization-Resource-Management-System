@@ -37,6 +37,7 @@ const VehicleList = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchVehicles = async () => {
     try {
@@ -64,18 +65,19 @@ const VehicleList = () => {
 
   const handleDelete = async () => {
     if (!selectedVehicle) return;
-
+    setDeleting(true);
     try {
       await vehicleService.deleteVehicle(selectedVehicle._id);
       toast.success('Vehicle deleted successfully');
       setVehicles(vehicles.filter(v => v._id !== selectedVehicle._id));
+      setDeleteConfirmOpen(false);
     } catch (error) {
       const message = error.response?.data?.message || 'Delete failed';
       toast.error(message);
+    } finally {
+      setDeleting(false);
+      handleCloseMenu();
     }
-
-    setDeleteConfirmOpen(false);
-    handleCloseMenu();
   };
 
   const getStatusColor = (status) => {
@@ -91,13 +93,14 @@ const VehicleList = () => {
     return <PageLoader text="Loading vehicles..." />;
   }
 
-  const canManage = user?.role === 'Admin' || user?.role === 'Manager';
+  const canManage = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Individual';
 
   const filteredVehicles = vehicles.filter(v =>
-    v.licensePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (v.driver?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+    (v.registrationNumber || v.licensePlate || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (v.manufacturer || v.make || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (v.vehicleName || v.model || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (v.driver?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (v.owner?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -117,7 +120,14 @@ const VehicleList = () => {
       />
 
       <DataTable
-        columns={[
+        columns={user?.role === 'Admin' ? [
+          { label: 'Vehicle Details' },
+          { label: 'Owner' },
+          { label: 'Assigned Driver' },
+          { label: 'Odometer' },
+          { label: 'Status' },
+          { label: 'Actions', align: 'right' }
+        ] : [
           { label: 'Vehicle Details' },
           { label: 'Assigned Driver' },
           { label: 'Odometer' },
@@ -126,15 +136,15 @@ const VehicleList = () => {
         ]}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        searchPlaceholder="Search license plate, make, driver..."
+        searchPlaceholder="Search license/reg number, name, driver..."
       >
         {filteredVehicles.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={5} align="center" sx={{ p: 0 }}>
+            <TableCell colSpan={user?.role === 'Admin' ? 6 : 5} align="center" sx={{ p: 0 }}>
               <EmptyState
                 icon={DirectionsCarIcon}
                 title="No vehicles found"
-                description={searchTerm ? "Try adjusting your search criteria" : "Get started by adding a new vehicle to your fleet."}
+                description={searchTerm ? "Try adjusting your search criteria" : "Get started by adding a new vehicle."}
               />
             </TableCell>
           </TableRow>
@@ -152,14 +162,32 @@ const VehicleList = () => {
                   </Avatar>
                   <Box>
                     <Typography variant="subtitle2" fontWeight="bold">
-                      {vehicle.licensePlate}
+                      {vehicle.registrationNumber || vehicle.licensePlate}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {vehicle.make} {vehicle.model} ({vehicle.year})
+                      {vehicle.manufacturer || vehicle.make} {vehicle.vehicleName || vehicle.model} ({vehicle.modelYear || vehicle.year})
                     </Typography>
                   </Box>
                 </Box>
               </TableCell>
+              {user?.role === 'Admin' && (
+                <TableCell>
+                  {vehicle.owner ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: 'secondary.light', color: 'secondary.dark' }}>
+                        {vehicle.owner.name.charAt(0)}
+                      </Avatar>
+                      <Typography variant="body2" fontWeight="500">
+                        {vehicle.owner.name}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Typography variant="body2" color="text.disabled" fontStyle="italic">
+                      System
+                    </Typography>
+                  )}
+                </TableCell>
+              )}
               <TableCell>
                 {vehicle.driver ? (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -227,10 +255,11 @@ const VehicleList = () => {
       <ConfirmDialog
         open={deleteConfirmOpen}
         title="Delete Vehicle"
-        content={`Are you sure you want to delete ${selectedVehicle?.licensePlate}? This action cannot be undone.`}
+        content={`Are you sure you want to delete ${selectedVehicle?.licensePlate || selectedVehicle?.registrationNumber}? This action cannot be undone.`}
         onConfirm={handleDelete}
         onCancel={() => setDeleteConfirmOpen(false)}
         confirmText="Delete"
+        loading={deleting}
       />
     </Box>
   );

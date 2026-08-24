@@ -9,6 +9,7 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import BusinessIcon from '@mui/icons-material/Business';
 import LogoutIcon from '@mui/icons-material/Logout';
+import PeopleIcon from '@mui/icons-material/People';
 import { AuthContext } from '../../context/AuthContext';
 
 const drawerWidth = 260;
@@ -29,9 +30,9 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   };
 
   const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon fontSize="small" />, path: '/dashboard', roles: ['Admin', 'Manager', 'Driver'] },
-    { text: 'Vehicles', icon: <DirectionsCarIcon fontSize="small" />, path: '/vehicles', roles: ['Admin', 'Manager', 'Driver'] },
-    { text: 'Trips', icon: <RouteIcon fontSize="small" />, path: '/trips', roles: ['Admin', 'Manager', 'Driver'] },
+    { text: 'Dashboard', icon: <DashboardIcon fontSize="small" />, path: '/dashboard', roles: ['Admin', 'Individual', 'Manager', 'Driver'] },
+    { text: 'Vehicles', icon: <DirectionsCarIcon fontSize="small" />, path: '/vehicles', roles: ['Admin', 'Individual', 'Manager', 'Driver'] },
+    { text: 'Trips', icon: <RouteIcon fontSize="small" />, path: '/trips', roles: ['Admin', 'Individual', 'Manager', 'Driver'] },
   ];
 
   const managerItems = [
@@ -41,6 +42,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
 
   const adminItems = [
     { text: 'Organizations', icon: <BusinessIcon fontSize="small" />, path: '/organizations', roles: ['Admin'] },
+    { text: 'User Management', icon: <PeopleIcon fontSize="small" />, path: '/admin/users', roles: ['Admin'] },
   ];
 
   const renderListItems = (items) => (

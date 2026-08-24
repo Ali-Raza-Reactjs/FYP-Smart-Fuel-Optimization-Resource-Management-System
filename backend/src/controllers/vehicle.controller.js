@@ -3,25 +3,51 @@ const User = require('../models/User');
 
 // @desc    Get all vehicles
 // @route   GET /api/vehicles
-// @access  Private (Admin/Manager/Driver)
+// @access  Private
 exports.getVehicles = async (req, res, next) => {
   try {
-    let query;
+    let queryObj = {};
 
-    // If user is Admin, they might want to see all vehicles or just their org's vehicles
-    // For simplicity, we'll scope it to their organization if they have one.
-    // If user is Driver, they only see vehicles assigned to them.
-    if (req.user.role === 'Admin' || req.user.role === 'Manager') {
-      if (req.user.organization) {
-        query = Vehicle.find({ organization: req.user.organization });
-      } else {
-        query = Vehicle.find(); // Super admin without specific org sees all
-      }
+    if (req.user.role === 'Individual') {
+      queryObj.owner = req.user._id;
     } else if (req.user.role === 'Driver') {
-      query = Vehicle.find({ driver: req.user._id });
+      queryObj.driver = req.user._id;
+    } else if (req.user.role === 'Admin' || req.user.role === 'Manager') {
+      if (req.user.organization) {
+        queryObj.organization = req.user.organization;
+      }
     }
 
-    const vehicles = await query.populate('organization', 'name').populate('driver', 'name email');
+    // Support admin searching by user/registration number
+    if (req.query.search && (req.user.role === 'Admin' || req.user.role === 'Manager')) {
+      const searchRegex = new RegExp(req.query.search, 'i');
+      
+      // Find matching users (owners or drivers)
+      const matchingUsers = await User.find({
+        $or: [
+          { name: searchRegex },
+          { email: searchRegex }
+        ]
+      }).select('_id');
+      const userIds = matchingUsers.map(u => u._id);
+
+      // Search filters
+      queryObj.$or = [
+        { registrationNumber: searchRegex },
+        { licensePlate: searchRegex },
+        { vehicleName: searchRegex },
+        { make: searchRegex },
+        { model: searchRegex },
+        { owner: { $in: userIds } },
+        { driver: { $in: userIds } }
+      ];
+    }
+
+    const vehicles = await Vehicle.find(queryObj)
+      .populate('organization', 'name')
+      .populate('driver', 'name email')
+      .populate('owner', 'name email profile.phoneNumber');
+
     res.status(200).json(vehicles);
   } catch (error) {
     next(error);
@@ -48,6 +74,12 @@ exports.getVehicle = async (req, res, next) => {
       throw new Error('Not authorized to access this vehicle');
     }
 
+    // Access control: Individual users can only view their own vehicles
+    if (req.user.role === 'Individual' && vehicle.owner?.toString() !== req.user._id.toString()) {
+      res.status(403);
+      throw new Error('Not authorized to access this vehicle');
+    }
+
     res.status(200).json(vehicle);
   } catch (error) {
     next(error);
@@ -56,19 +88,22 @@ exports.getVehicle = async (req, res, next) => {
 
 // @desc    Create new vehicle
 // @route   POST /api/vehicles
-// @access  Private (Admin/Manager)
+// @access  Private (Admin/Manager/Individual)
 exports.createVehicle = async (req, res, next) => {
   try {
-    // Check if user has an organization
-    if (!req.user.organization && req.user.role !== 'Admin') {
+    // Check if user has an organization (exempting Admin and Individual roles)
+    if (!req.user.organization && req.user.role !== 'Admin' && req.user.role !== 'Individual') {
       res.status(400);
       throw new Error('User must belong to an organization to add a vehicle');
     }
 
     // Default organization to the user's organization if not provided
-    if (!req.body.organization) {
+    if (!req.body.organization && req.user.organization) {
       req.body.organization = req.user.organization;
     }
+
+    // Set owner to creator if not specified
+    req.body.owner = req.body.owner || req.user._id;
 
     const vehicle = await Vehicle.create(req.body);
     res.status(201).json(vehicle);
@@ -79,7 +114,7 @@ exports.createVehicle = async (req, res, next) => {
 
 // @desc    Update vehicle
 // @route   PUT /api/vehicles/:id
-// @access  Private (Admin/Manager)
+// @access  Private (Admin/Manager/Individual)
 exports.updateVehicle = async (req, res, next) => {
   try {
     let vehicle = await Vehicle.findById(req.params.id);
@@ -94,8 +129,14 @@ exports.updateVehicle = async (req, res, next) => {
       throw new Error('Not authorized to update this vehicle');
     }
 
+    // Security for Individual users
+    if (req.user.role === 'Individual' && vehicle.owner?.toString() !== req.user._id.toString()) {
+      res.status(403);
+      throw new Error('Not authorized to update this vehicle');
+    }
+
     // Security: Ensure Admin/Manager can only modify vehicles within their own organization
-    if (req.user.organization && vehicle.organization.toString() !== req.user.organization.toString()) {
+    if (req.user.role !== 'Admin' && req.user.organization && vehicle.organization && vehicle.organization.toString() !== req.user.organization.toString()) {
       res.status(403);
       throw new Error('Not authorized to update a vehicle outside your organization');
     }
@@ -113,7 +154,7 @@ exports.updateVehicle = async (req, res, next) => {
 
 // @desc    Delete vehicle
 // @route   DELETE /api/vehicles/:id
-// @access  Private (Admin/Manager)
+// @access  Private (Admin/Manager/Individual)
 exports.deleteVehicle = async (req, res, next) => {
   try {
     const vehicle = await Vehicle.findById(req.params.id);
@@ -128,8 +169,14 @@ exports.deleteVehicle = async (req, res, next) => {
       throw new Error('Not authorized to delete this vehicle');
     }
 
+    // Security for Individual users
+    if (req.user.role === 'Individual' && vehicle.owner?.toString() !== req.user._id.toString()) {
+      res.status(403);
+      throw new Error('Not authorized to delete this vehicle');
+    }
+
     // Security: Ensure Admin/Manager can only delete vehicles within their own organization
-    if (req.user.organization && vehicle.organization.toString() !== req.user.organization.toString()) {
+    if (req.user.role !== 'Admin' && req.user.organization && vehicle.organization && vehicle.organization.toString() !== req.user.organization.toString()) {
       res.status(403);
       throw new Error('Not authorized to delete a vehicle outside your organization');
     }

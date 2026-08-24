@@ -19,11 +19,11 @@ router.route('/drivers/available')
 
 router.route('/')
   .get(getVehicles)
-  .post(authorize('Admin', 'Manager'), createVehicle);
+  .post(authorize('Admin', 'Manager', 'Individual'), createVehicle);
 
 router.route('/:id')
   .get(getVehicle)
-  .put(authorize('Admin', 'Manager'), updateVehicle)
-  .delete(authorize('Admin', 'Manager'), deleteVehicle);
+  .put(authorize('Admin', 'Manager', 'Individual'), updateVehicle)
+  .delete(authorize('Admin', 'Manager', 'Individual'), deleteVehicle);
 
 module.exports = router;

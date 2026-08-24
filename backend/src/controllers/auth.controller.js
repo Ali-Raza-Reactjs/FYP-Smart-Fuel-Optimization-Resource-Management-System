@@ -13,13 +13,7 @@ const generateToken = (id) => {
 // @access  Public
 exports.register = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
-
-    // Security: Users cannot self-assign elevated roles
-    if (role === 'Admin') {
-      res.status(403);
-      throw new Error('Admin accounts cannot be self-registered. Please contact your system administrator.');
-    }
+    const { name, email, password, role, contactNumber } = req.body;
 
     // Normalize email to lowercase
     const normalizedEmail = email ? email.toLowerCase().trim() : '';
@@ -37,7 +31,11 @@ exports.register = async (req, res, next) => {
       name,
       email: normalizedEmail,
       password,
-      role: role || 'Driver' // default to Driver if role not provided
+      role: role || 'Individual',
+      profile: {
+        phoneNumber: contactNumber || '',
+        address: ''
+      }
     });
 
     if (user) {
@@ -46,6 +44,7 @@ exports.register = async (req, res, next) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        profile: user.profile,
         token: generateToken(user._id),
       });
     } else {
@@ -130,3 +129,15 @@ exports.changePassword = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Logout user
+// @route   POST /api/auth/logout
+// @access  Private
+exports.logout = async (req, res, next) => {
+  try {
+    res.status(200).json({ success: true, message: 'Logged out successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+

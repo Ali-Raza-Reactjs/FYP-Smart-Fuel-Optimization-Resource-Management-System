@@ -6,6 +6,7 @@ import { AuthContext } from '../context/AuthContext';
 
 const Profile = () => {
   const { user, updateProfile } = useContext(AuthContext);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -32,6 +33,7 @@ const Profile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     await updateProfile({
       name: formData.name,
       profile: {
@@ -39,6 +41,7 @@ const Profile = () => {
         address: formData.address
       }
     });
+    setLoading(false);
   };
 
   return (
@@ -108,6 +111,7 @@ const Profile = () => {
             <Button
               type="submit"
               variant="contained"
+              loading={loading}
               sx={{ mt: 3 }}
             >
               Update Profile

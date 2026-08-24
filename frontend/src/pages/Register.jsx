@@ -12,11 +12,13 @@ import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
+import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined';
 
 const Register = () => {
   const theme = useTheme();
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'Driver' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'Individual', contactNumber: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { register } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -26,7 +28,9 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     const success = await register(formData);
+    setLoading(false);
     if (success) {
       navigate('/dashboard');
     }
@@ -66,9 +70,9 @@ const Register = () => {
           </Typography>
 
           <Box sx={{ mt: 6, p: 3, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)' }}>
-            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>Admin Accounts</Typography>
+            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>Account Selection</Typography>
             <Typography variant="body2" sx={{ opacity: 0.9 }}>
-              Organization Administrators cannot be created through this public form. Please contact your system administrator to be provisioned an Admin account.
+              Register as an Individual to manage your personal vehicles and logs, or as an Admin to oversee all users and assets in the system.
             </Typography>
           </Box>
         </Box>
@@ -130,6 +134,18 @@ const Register = () => {
               <Grid size={{ xs: 12 }}>
                 <TextField
                   required
+                  id="contactNumber"
+                  name="contactNumber"
+                  label="Contact Number"
+                  placeholder="+92 300 1234567"
+                  value={formData.contactNumber}
+                  onChange={handleChange}
+                  startIcon={<PhoneOutlinedIcon sx={{ color: 'text.secondary' }} />}
+                />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  required
                   name="password"
                   label="Password"
                   type={showPassword ? 'text' : 'password'}
@@ -153,8 +169,8 @@ const Register = () => {
                   onChange={handleChange}
                   startIcon={<BadgeOutlinedIcon sx={{ color: 'text.secondary' }} />}
                   options={[
-                    { value: 'Manager', label: 'Manager' },
-                    { value: 'Driver', label: 'Driver' }
+                    { value: 'Individual', label: 'Individual' },
+                    { value: 'Admin', label: 'Admin' }
                   ]}
                 />
               </Grid>
@@ -163,6 +179,7 @@ const Register = () => {
                   type="submit"
                   fullWidth
                   size="large"
+                  loading={loading}
                   sx={{ mt: 1 }}
                 >
                   Create Account
