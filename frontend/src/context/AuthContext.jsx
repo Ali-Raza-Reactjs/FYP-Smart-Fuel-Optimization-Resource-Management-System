@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
       toast.success('Logged in successfully');
       return true;
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
+      const message = error.message || error.response?.data?.message || 'Login failed';
       toast.error(message);
       return false;
     }
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
       toast.success('Registered successfully');
       return true;
     } catch (error) {
-      const message = error.response?.data?.message || 'Registration failed';
+      const message = error.message || error.response?.data?.message || 'Registration failed';
       toast.error(message);
       return false;
     }
@@ -78,7 +78,7 @@ export const AuthProvider = ({ children }) => {
       toast.success('Profile updated');
       return true;
     } catch (error) {
-      const message = error.response?.data?.message || 'Profile update failed';
+      const message = error.message || error.response?.data?.message || 'Profile update failed';
       toast.error(message);
       return false;
     }

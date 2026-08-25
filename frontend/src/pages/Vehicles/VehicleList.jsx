@@ -72,7 +72,7 @@ const VehicleList = () => {
       setVehicles(vehicles.filter(v => v._id !== selectedVehicle._id));
       setDeleteConfirmOpen(false);
     } catch (error) {
-      const message = error.response?.data?.message || 'Delete failed';
+      const message = error.message || error.response?.data?.message || 'Delete failed';
       toast.error(message);
     } finally {
       setDeleting(false);

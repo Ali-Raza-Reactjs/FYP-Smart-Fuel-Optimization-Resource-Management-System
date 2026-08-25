@@ -139,7 +139,7 @@ const UserManagement = () => {
       setUsers(users.map(u => u._id === updated._id ? { ...u, ...updated } : u));
       setEditDialogOpen(false);
     } catch (error) {
-      const message = error.response?.data?.message || 'Update failed';
+      const message = error.message || error.response?.data?.message || 'Update failed';
       toast.error(message);
     } finally {
       setSubmitting(false);
@@ -155,7 +155,7 @@ const UserManagement = () => {
       setUsers(users.filter(u => u._id !== selectedUser._id));
       setDeleteConfirmOpen(false);
     } catch (error) {
-      const message = error.response?.data?.message || 'Delete failed';
+      const message = error.message || error.response?.data?.message || 'Delete failed';
       toast.error(message);
     } finally {
       setDeleting(false);

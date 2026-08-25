@@ -9,6 +9,7 @@ const exportFinancialReport = async (startDate, endDate) => {
     responseType: 'blob', // Important for downloading files
   }));
   
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   // Create a URL and trigger download
   const url = window.URL.createObjectURL(new Blob([response.data]));
   const link = document.createElement('a');

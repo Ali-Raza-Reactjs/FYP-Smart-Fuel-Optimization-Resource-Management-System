@@ -94,7 +94,7 @@ const VehicleForm = () => {
       }
       navigate('/vehicles');
     } catch (error) {
-      const message = error.response?.data?.message || 'Action failed';
+      const message = error.message || error.response?.data?.message || 'Action failed';
       toast.error(message);
     } finally {
       setSubmitting(false);

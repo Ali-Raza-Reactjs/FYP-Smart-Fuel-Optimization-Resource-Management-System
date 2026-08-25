@@ -61,7 +61,7 @@ const MaintenanceList = () => {
       toast.success('Log deleted successfully');
       setLogs(logs.filter(log => log._id !== selectedLogId));
     } catch (error) {
-      const message = error.response?.data?.message || 'Delete failed';
+      const message = error.message || error.response?.data?.message || 'Delete failed';
       toast.error(message);
     }
     setDeleteConfirmOpen(false);

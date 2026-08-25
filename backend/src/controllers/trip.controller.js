@@ -46,6 +46,10 @@ try {
       query = Trip.find();
     } else if (req.user.role === 'Driver') {
       query = Trip.find({ driver: req.user._id });
+    } else if (req.user.role === 'Individual') {
+      const vehicles = await Vehicle.find({ owner: req.user._id }).select('_id');
+      const vehicleIds = vehicles.map(v => v._id);
+      query = Trip.find({ vehicle: { $in: vehicleIds } });
     }
 
     const trips = await query

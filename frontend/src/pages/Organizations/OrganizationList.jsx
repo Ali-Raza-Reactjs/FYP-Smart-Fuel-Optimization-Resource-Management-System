@@ -51,7 +51,7 @@ const OrganizationList = () => {
       toast.success('Organization deleted successfully');
       setOrganizations(organizations.filter(org => org._id !== selectedOrgId));
     } catch (error) {
-      const message = error.response?.data?.message || 'Delete failed';
+      const message = error.message || error.response?.data?.message || 'Delete failed';
       toast.error(message);
     }
     setDeleteConfirmOpen(false);

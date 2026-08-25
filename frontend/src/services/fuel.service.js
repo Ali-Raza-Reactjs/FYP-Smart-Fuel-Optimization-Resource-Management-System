@@ -6,12 +6,14 @@ const API_URL = '/fuel';
 // Get fuel records and analytics for a vehicle
 const getFuelRecords = async (vehicleId) => {
   const { response } = await fetchMethod(() => api.get(`${API_URL}/vehicle/${vehicleId}`));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 
 // Get single fuel record
 const getFuelRecord = async (id) => {
   const { response } = await fetchMethod(() => api.get(`${API_URL}/${id}`));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 
@@ -22,6 +24,7 @@ const createFuelRecord = async (formData) => {
       'Content-Type': 'multipart/form-data',
     },
   }));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 
@@ -32,12 +35,14 @@ const updateFuelRecord = async (id, formData) => {
       'Content-Type': 'multipart/form-data',
     },
   }));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 
 // Delete fuel record
 const deleteFuelRecord = async (id) => {
   const { response } = await fetchMethod(() => api.delete(`${API_URL}/${id}`));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 

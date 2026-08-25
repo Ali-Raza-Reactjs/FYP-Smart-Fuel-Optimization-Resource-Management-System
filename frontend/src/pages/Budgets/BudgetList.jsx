@@ -49,7 +49,7 @@ const BudgetList = () => {
       toast.success('Budget deleted successfully');
       setBudgets(budgets.filter(budget => budget._id !== selectedBudgetId));
     } catch (error) {
-      const message = error.response?.data?.message || 'Delete failed';
+      const message = error.message || error.response?.data?.message || 'Delete failed';
       toast.error(message);
     }
     setDeleteConfirmOpen(false);

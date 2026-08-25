@@ -6,30 +6,35 @@ const API_URL = '/users';
 // Get all users (Admin only)
 const getUsers = async () => {
   const { response } = await fetchMethod(() => api.get(API_URL));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 
 // Get user details (Admin only)
 const getUserById = async (id) => {
   const { response } = await fetchMethod(() => api.get(`${API_URL}/${id}`));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 
 // Update user details (Admin only)
 const updateUser = async (id, userData) => {
   const { response } = await fetchMethod(() => api.put(`${API_URL}/${id}`, userData));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 
 // Delete user (Admin only)
 const deleteUser = async (id) => {
   const { response } = await fetchMethod(() => api.delete(`${API_URL}/${id}`));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 
 // Delete all inactive users (Admin only)
 const deleteInactiveUsers = async () => {
   const { response } = await fetchMethod(() => api.delete(`${API_URL}/inactive`));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 

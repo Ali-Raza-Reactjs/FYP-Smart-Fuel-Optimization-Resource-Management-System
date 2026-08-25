@@ -54,7 +54,7 @@ const TripList = () => {
       toast.success('Trip deleted successfully');
       setTrips(trips.filter(trip => trip._id !== selectedTrip._id));
     } catch (error) {
-      const message = error.response?.data?.message || 'Delete failed';
+      const message = error.message || error.response?.data?.message || 'Delete failed';
       toast.error(message);
     }
     setDeleteConfirmOpen(false);
@@ -69,7 +69,7 @@ const TripList = () => {
       toast.success(`Trip marked as ${newStatus}`);
       fetchTrips();
     } catch (error) {
-      const message = error.response?.data?.message || 'Update failed';
+      const message = error.message || error.response?.data?.message || 'Update failed';
       toast.error(message);
     }
   };

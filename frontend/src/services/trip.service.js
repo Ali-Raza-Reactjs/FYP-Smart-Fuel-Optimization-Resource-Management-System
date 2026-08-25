@@ -6,30 +6,35 @@ const API_URL = '/trips';
 // Get all trips (filtered by backend based on role)
 const getTrips = async () => {
   const { response } = await fetchMethod(() => api.get(API_URL));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 
 // Get single trip
 const getTrip = async (id) => {
   const { response } = await fetchMethod(() => api.get(`${API_URL}/${id}`));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 
 // Create trip
 const createTrip = async (tripData) => {
   const { response } = await fetchMethod(() => api.post(API_URL, tripData));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 
 // Update trip
 const updateTrip = async (id, tripData) => {
   const { response } = await fetchMethod(() => api.put(`${API_URL}/${id}`, tripData));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 
 // Delete trip
 const deleteTrip = async (id) => {
   const { response } = await fetchMethod(() => api.delete(`${API_URL}/${id}`));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 

@@ -6,30 +6,35 @@ const API_URL = '/maintenance';
 // Get maintenance logs for a vehicle
 const getMaintenanceLogs = async (vehicleId) => {
   const { response } = await fetchMethod(() => api.get(`${API_URL}/vehicle/${vehicleId}`));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 
 // Get single maintenance log
 const getMaintenanceLog = async (id) => {
   const { response } = await fetchMethod(() => api.get(`${API_URL}/${id}`));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 
 // Create maintenance log
 const createMaintenanceLog = async (logData) => {
   const { response } = await fetchMethod(() => api.post(API_URL, logData));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 
 // Update maintenance log
 const updateMaintenanceLog = async (id, logData) => {
   const { response } = await fetchMethod(() => api.put(`${API_URL}/${id}`, logData));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 
 // Delete maintenance log
 const deleteMaintenanceLog = async (id) => {
   const { response } = await fetchMethod(() => api.delete(`${API_URL}/${id}`));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
   return response.data;
 };
 

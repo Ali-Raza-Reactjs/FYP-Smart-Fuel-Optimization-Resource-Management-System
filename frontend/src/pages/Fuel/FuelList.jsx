@@ -68,7 +68,7 @@ const FuelList = () => {
       setRecords(fuelData.records);
       setAnalytics(fuelData.analytics);
     } catch (error) {
-      const message = error.response?.data?.message || 'Delete failed';
+      const message = error.message || error.response?.data?.message || 'Delete failed';
       toast.error(message);
     }
     setDeleteConfirmOpen(false);
