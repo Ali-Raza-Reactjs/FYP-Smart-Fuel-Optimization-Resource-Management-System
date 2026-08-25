@@ -3,7 +3,9 @@ import api from "./api";
 
 // Register user
 const register = async (userData) => {
-  const { response } = await fetchMethod(() => api.post("/auth/register", userData));
+  const { response } = await fetchMethod(() =>
+    api.post("/auth/register", userData),
+  );
   if (response.data) {
     localStorage.setItem("user", JSON.stringify(response.data));
   }
@@ -12,7 +14,6 @@ const register = async (userData) => {
 
 // Login user
 const login = async (userData) => {
-  debugger;
   const { response } = await fetchMethod(() =>
     api.post("/auth/login", userData),
   );
@@ -35,7 +36,9 @@ const getProfile = async () => {
 
 // Update user profile
 const updateProfile = async (userData) => {
-  const { response } = await fetchMethod(() => api.put("/users/profile", userData));
+  const { response } = await fetchMethod(() =>
+    api.put("/users/profile", userData),
+  );
   return response.data;
 };
 
