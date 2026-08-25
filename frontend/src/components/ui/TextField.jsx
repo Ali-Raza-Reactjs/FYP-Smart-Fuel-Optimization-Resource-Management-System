@@ -48,12 +48,12 @@ const TextField = ({
           <InputAdornment position="start">
             {startIcon}
           </InputAdornment>
-        ) : {},
+        ) : null,
         endAdornment: endIcon ? (
           <InputAdornment position="end">
             {endIcon}
           </InputAdornment>
-        ) : {},
+        ) : null,
       } }}
       sx={{
         ...sx,

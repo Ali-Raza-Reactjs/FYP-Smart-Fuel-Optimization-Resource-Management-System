@@ -40,7 +40,7 @@ const Select = ({
           <InputAdornment position="start">
             {startIcon}
           </InputAdornment>
-        ) : {},
+        ) : null,
       } }}
       sx={{
         ...sx,

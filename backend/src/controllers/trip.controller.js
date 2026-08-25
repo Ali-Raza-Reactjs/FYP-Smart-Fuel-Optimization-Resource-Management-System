@@ -9,12 +9,16 @@ const checkVehicleAccess = async (vehicleId, user) => {
   if (!vehicle) {
     throw new Error('Vehicle not found');
   }
-  if (user.role === 'Admin' || user.role === 'Manager') {
-    if (user.organization && vehicle.organization.toString() !== user.organization.toString()) {
+  if (user.role === 'Manager') {
+    if (user.organization && vehicle.organization && vehicle.organization.toString() !== user.organization.toString()) {
       throw new Error('Not authorized to access this vehicle');
     }
   } else if (user.role === 'Driver') {
     if (vehicle.driver?.toString() !== user._id.toString()) {
+      throw new Error('Not authorized to access this vehicle');
+    }
+  } else if (user.role === 'Individual') {
+    if (vehicle.owner?.toString() !== user._id.toString()) {
       throw new Error('Not authorized to access this vehicle');
     }
   }
@@ -29,7 +33,7 @@ exports.getTrips = async (req, res, next) => {
 try {
     let query;
 
-    if (req.user.role === 'Admin' || req.user.role === 'Manager') {
+    if (req.user.role === 'Manager') {
       if (req.user.organization) {
         // Find all vehicles for the org, then find trips for those vehicles
         const vehicles = await Vehicle.find({ organization: req.user.organization }).select('_id');
@@ -38,6 +42,8 @@ try {
       } else {
         query = Trip.find();
       }
+    } else if (req.user.role === 'Admin') {
+      query = Trip.find();
     } else if (req.user.role === 'Driver') {
       query = Trip.find({ driver: req.user._id });
     }
@@ -221,7 +227,7 @@ try {
     }
 
     trip = await Trip.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true
     });
 

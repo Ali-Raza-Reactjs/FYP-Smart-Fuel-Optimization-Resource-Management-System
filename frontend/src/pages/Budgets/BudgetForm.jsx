@@ -118,7 +118,7 @@ const BudgetForm = () => {
                 label="Total Budget Limit ($)"
                 name="totalLimit"
                 type="number"
-                inputProps={{ step: "100", min: "0" }}
+                slotProps={{ htmlInput: { step: "100", min: "0" } }}
                 value={formData.totalLimit}
                 onChange={handleChange}
                 autoFocus
@@ -131,7 +131,7 @@ const BudgetForm = () => {
                 label="Alert Threshold (%)"
                 name="alertThreshold"
                 type="number"
-                inputProps={{ step: "1", min: "1", max: "100" }}
+                slotProps={{ htmlInput: { step: "1", min: "1", max: "100" } }}
                 value={formData.alertThreshold}
                 onChange={handleChange}
                 helperText="Percentage at which UI displays a warning"

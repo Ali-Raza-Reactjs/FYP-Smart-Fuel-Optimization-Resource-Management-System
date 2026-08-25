@@ -16,12 +16,16 @@ const checkVehicleAccess = async (vehicleId, user) => {
     throw new Error('Vehicle not found');
   }
 
-  if (user.role === 'Admin' || user.role === 'Manager') {
-    if (user.organization && vehicle.organization.toString() !== user.organization.toString()) {
+  if (user.role === 'Manager') {
+    if (user.organization && vehicle.organization && vehicle.organization.toString() !== user.organization.toString()) {
       throw new Error('Not authorized to access this vehicle');
     }
   } else if (user.role === 'Driver') {
     if (vehicle.driver?.toString() !== user._id.toString()) {
+      throw new Error('Not authorized to access this vehicle');
+    }
+  } else if (user.role === 'Individual') {
+    if (vehicle.owner?.toString() !== user._id.toString()) {
       throw new Error('Not authorized to access this vehicle');
     }
   }
@@ -227,7 +231,7 @@ try {
     }
 
     record = await FuelRecord.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true
     });
 

@@ -129,7 +129,7 @@ const Navbar = () => {
                 transformOrigin={{ vertical: 'top', horizontal: 'right' }}
                 open={Boolean(notifAnchorEl)}
                 onClose={handleNotifClose}
-                PaperProps={{ style: { maxHeight: 400, width: '350px' } }}
+                slotProps={{ paper: { style: { maxHeight: 400, width: '350px' } } }}
               >
                 <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography variant="h6">Notifications</Typography>

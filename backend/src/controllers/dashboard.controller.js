@@ -20,17 +20,23 @@ try {
       let activeVehicles = 0;
       let totalDrivers = 0;
 
-      if (role === 'Individual') {
+      if (role === 'Admin') {
+        const vehicles = await Vehicle.find().select('_id status');
+        vehicleIds = vehicles.map(v => v._id);
+        totalVehicles = vehicles.length;
+        activeVehicles = vehicles.filter(v => v.status === 'Active').length;
+        totalDrivers = await User.countDocuments({ role: 'Driver' });
+      } else if (role === 'Individual') {
         const vehicles = await Vehicle.find({ owner: _id }).select('_id status');
         vehicleIds = vehicles.map(v => v._id);
         totalVehicles = vehicles.length;
         activeVehicles = vehicles.filter(v => v.status === 'Active').length;
         totalDrivers = 0;
-      } else {
+      } else if (role === 'Manager') {
         if (!organization) {
-          return apiResponseModel.status = true;
-    apiResponseModel.msg = "Success";
-    apiResponseModel.data = {
+          apiResponseModel.status = true;
+          apiResponseModel.msg = "Success";
+          apiResponseModel.data = {
             hasOrganization: false,
             totalVehicles: 0,
             activeVehicles: 0,
@@ -39,9 +45,8 @@ try {
             currentMonthSpend: 0,
             historicalSpend: []
           };
-    return res.status(200).json(apiResponseModel);
+          return res.status(200).json(apiResponseModel);
         }
-
         const vehicles = await Vehicle.find({ organization }).select('_id status');
         vehicleIds = vehicles.map(v => v._id);
         totalVehicles = vehicles.length;

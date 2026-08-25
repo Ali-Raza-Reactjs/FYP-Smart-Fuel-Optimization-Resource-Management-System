@@ -14,10 +14,12 @@ try {
       queryObj.owner = req.user._id;
     } else if (req.user.role === 'Driver') {
       queryObj.driver = req.user._id;
-    } else if (req.user.role === 'Admin' || req.user.role === 'Manager') {
+    } else if (req.user.role === 'Manager') {
       if (req.user.organization) {
         queryObj.organization = req.user.organization;
       }
+    } else if (req.user.role === 'Admin') {
+      // Admins can access and manage all vehicle records
     }
 
     // Support admin searching by user/registration number
@@ -149,14 +151,14 @@ try {
       throw new Error('Not authorized to update this vehicle');
     }
 
-    // Security: Ensure Admin/Manager can only modify vehicles within their own organization
-    if (req.user.role !== 'Admin' && req.user.organization && vehicle.organization && vehicle.organization.toString() !== req.user.organization.toString()) {
+    // Security: Ensure Manager can only modify vehicles within their own organization
+    if (req.user.role === 'Manager' && req.user.organization && vehicle.organization && vehicle.organization.toString() !== req.user.organization.toString()) {
       res.status(403);
       throw new Error('Not authorized to update a vehicle outside your organization');
     }
 
     vehicle = await Vehicle.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true
     });
 
@@ -193,8 +195,8 @@ try {
       throw new Error('Not authorized to delete this vehicle');
     }
 
-    // Security: Ensure Admin/Manager can only delete vehicles within their own organization
-    if (req.user.role !== 'Admin' && req.user.organization && vehicle.organization && vehicle.organization.toString() !== req.user.organization.toString()) {
+    // Security: Ensure Manager can only delete vehicles within their own organization
+    if (req.user.role === 'Manager' && req.user.organization && vehicle.organization && vehicle.organization.toString() !== req.user.organization.toString()) {
       res.status(403);
       throw new Error('Not authorized to delete a vehicle outside your organization');
     }
@@ -227,8 +229,8 @@ try {
     // Find all users with role 'Driver'
     let query = { role: 'Driver' };
     
-    // Scope to organization if applicable
-    if (req.user.organization) {
+    // Scope to organization if applicable (Manager only)
+    if (req.user.role === 'Manager' && req.user.organization) {
       query.$or = [
         { organization: req.user.organization },
         { organization: null },

@@ -138,7 +138,7 @@ const VehicleForm = () => {
                 placeholder="e.g. ABC-1234"
                 value={formData.registrationNumber}
                 onChange={handleChange}
-                inputProps={{ style: { textTransform: 'uppercase' } }}
+                slotProps={{ htmlInput: { style: { textTransform: 'uppercase' } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>

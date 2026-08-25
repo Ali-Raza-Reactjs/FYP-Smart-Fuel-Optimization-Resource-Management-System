@@ -11,6 +11,7 @@ import api from '../../services/api';
 import { toast } from 'react-toastify';
 import LocationSearch from '../../components/map/LocationSearch';
 import RouteMap from '../../components/map/RouteMap';
+import { fetchMethod } from '../../utils/helper';
 
 const TripForm = () => {
   const { id } = useParams();
@@ -90,11 +91,15 @@ const TripForm = () => {
 
     setCalculatingRoute(true);
     try {
-      const response = await api.post('/routes/optimize', {
+      const { response } = await fetchMethod(() => api.post('/routes/optimize', {
         startCoordinates: formData.startCoordinates,
         endCoordinates: formData.endCoordinates,
         vehicleId: formData.vehicle
-      });
+      }));
+
+      if (!response.status) {
+        throw new Error(response?.msg || 'Failed to calculate route.');
+      }
 
       const { distance, estimatedDuration, estimatedFuel, geometry } = response.data;
 
@@ -108,7 +113,7 @@ const TripForm = () => {
 
       toast.success('Route optimized successfully!');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to calculate route.');
+      toast.error(error.message || 'Failed to calculate route.');
     } finally {
       setCalculatingRoute(false);
     }

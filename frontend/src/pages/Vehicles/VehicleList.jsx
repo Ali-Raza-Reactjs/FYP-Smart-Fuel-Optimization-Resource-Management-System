@@ -226,7 +226,7 @@ const VehicleList = () => {
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleCloseMenu}
-        PaperProps={{ elevation: 3, sx: { width: 200, borderRadius: 2, mt: 1 } }}
+        slotProps={{ paper: { elevation: 3, sx: { width: 200, borderRadius: 2, mt: 1 } } }}
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >

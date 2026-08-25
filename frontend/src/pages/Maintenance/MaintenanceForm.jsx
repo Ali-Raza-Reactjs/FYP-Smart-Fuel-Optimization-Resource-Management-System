@@ -136,7 +136,7 @@ const MaintenanceForm = () => {
               label="Cost ($)"
               name="cost"
               type="number"
-              inputProps={{ step: "0.01" }}
+              slotProps={{ htmlInput: { step: "0.01" } }}
               value={formData.cost}
               onChange={handleChange}
             />

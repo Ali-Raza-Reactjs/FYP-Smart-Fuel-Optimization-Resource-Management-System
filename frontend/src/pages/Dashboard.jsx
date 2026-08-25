@@ -36,7 +36,7 @@ const StatCard = ({ title, value, icon, color, trend }) => {
       <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <Box>
-            <Typography color="text.secondary" variant="subtitle2" fontWeight={600} textTransform="uppercase" letterSpacing={0.5} gutterBottom>
+            <Typography color="text.secondary" variant="subtitle2" fontWeight={600}  letterSpacing={0.5} gutterBottom sx={{ textTransform: 'uppercase' }}>
               {title}
             </Typography>
             <Typography variant="h3" fontWeight="bold" color="text.primary">
@@ -252,7 +252,7 @@ const Dashboard = () => {
             <Grid size={{ xs: 12, md: 4 }}>
               <Card elevation={0} sx={{ height: '100%', borderTop: `4px solid ${theme.palette.primary.main}` }}>
                 <CardContent sx={{ p: 3 }}>
-                  <Typography variant="subtitle1" fontWeight="bold" textTransform="uppercase" color="text.secondary" gutterBottom letterSpacing={0.5}>
+                  <Typography variant="subtitle1" fontWeight="bold"  color="text.secondary" gutterBottom letterSpacing={0.5} sx={{ textTransform: 'uppercase' }}>
                     My Assigned Vehicle
                   </Typography>
 
@@ -275,7 +275,7 @@ const Dashboard = () => {
                   )}
 
                   <Box mt={4}>
-                    <Typography variant="subtitle2" fontWeight="bold" color="text.secondary" textTransform="uppercase" gutterBottom letterSpacing={0.5}>
+                    <Typography variant="subtitle2" fontWeight="bold" color="text.secondary"  gutterBottom letterSpacing={0.5} sx={{ textTransform: 'uppercase' }}>
                       Month-to-Date Fuel
                     </Typography>
                     <Box sx={{ display: "flex", alignItems: "baseline", mt: 1, gap: 1 }}>

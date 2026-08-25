@@ -125,10 +125,10 @@ const Header = ({ handleDrawerToggle }) => {
             anchorEl={notifAnchorEl}
             open={Boolean(notifAnchorEl)}
             onClose={() => setNotifAnchorEl(null)}
-            PaperProps={{
+            slotProps={{ paper: {
               elevation: 3,
               sx: { width: '360px', maxHeight: '400px', mt: 1.5, borderRadius: 2 }
-            }}
+            } }}
             transformOrigin={{ horizontal: 'right', vertical: 'top' }}
             anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
           >
@@ -216,7 +216,7 @@ const Header = ({ handleDrawerToggle }) => {
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
             onClose={() => setAnchorEl(null)}
-            PaperProps={{ elevation: 3, sx: { width: '200px', mt: 1, borderRadius: 2 } }}
+            slotProps={{ paper: { elevation: 3, sx: { width: '200px', mt: 1, borderRadius: 2 } } }}
             transformOrigin={{ horizontal: 'right', vertical: 'top' }}
             anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
           >

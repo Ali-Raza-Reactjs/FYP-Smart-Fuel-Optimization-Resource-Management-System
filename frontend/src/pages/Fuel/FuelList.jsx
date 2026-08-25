@@ -209,7 +209,7 @@ const FuelList = () => {
           </DataTable>
 
           {/* Receipt Image Dialog */}
-          <Dialog open={receiptOpen} onClose={handleCloseReceipt} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
+          <Dialog open={receiptOpen} onClose={handleCloseReceipt} maxWidth="sm" fullWidth slotProps={{ paper: { sx: { borderRadius: 2 } } }}>
             <DialogTitle sx={{ fontWeight: 'bold' }}>Receipt Image</DialogTitle>
             <DialogContent>
               {selectedReceipt && (

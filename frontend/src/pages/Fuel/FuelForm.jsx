@@ -135,7 +135,7 @@ const FuelForm = () => {
               label="Liters Pumped"
               name="liters"
               type="number"
-              inputProps={{ step: "0.01" }}
+              slotProps={{ htmlInput: { step: "0.01" } }}
               value={formData.liters}
               onChange={handleChange}
             />
@@ -147,7 +147,7 @@ const FuelForm = () => {
               label="Total Cost ($)"
               name="cost"
               type="number"
-              inputProps={{ step: "0.01" }}
+              slotProps={{ htmlInput: { step: "0.01" } }}
               value={formData.cost}
               onChange={handleChange}
             />
@@ -161,7 +161,7 @@ const FuelForm = () => {
               name="receiptImage"
               onChange={handleFileChange}
               fullWidth
-              inputProps={{ accept: "image/*" }}
+              slotProps={{ htmlInput: { accept: "image/*" } }}
               sx={{ mt: 1, mb: 2 }}
             />
           </Grid>

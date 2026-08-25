@@ -8,7 +8,7 @@ import Button from './Button';
  */
 const ConfirmDialog = ({ open, title, content, onConfirm, onCancel, confirmText = 'Confirm', cancelText = 'Cancel', confirmColor = 'error', loading = false }) => {
   return (
-    <Dialog open={open} onClose={onCancel} PaperProps={{ sx: { borderRadius: 2, p: 1, minWidth: 400 } }}>
+    <Dialog open={open} onClose={onCancel} slotProps={{ paper: { sx: { borderRadius: 2, p: 1, minWidth: 400 } } }}>
       <DialogTitle sx={{ fontWeight: 'bold' }}>{title}</DialogTitle>
       <DialogContent>
         <DialogContentText>{content}</DialogContentText>

@@ -34,7 +34,7 @@ const StatCard = ({ title, value, icon, color }) => {
       <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box>
-            <Typography color="text.secondary" variant="caption" fontWeight={600} textTransform="uppercase" letterSpacing={0.5}>
+            <Typography color="text.secondary" variant="caption" fontWeight={600}  letterSpacing={0.5} sx={{ textTransform: 'uppercase' }}>
               {title}
             </Typography>
             <Typography variant="h4" fontWeight="bold" color="text.primary" sx={{ mt: 1 }}>
@@ -71,7 +71,7 @@ const UserManagement = () => {
   // Action Menu state
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
-  
+
   // Confirmations
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteInactiveConfirmOpen, setDeleteInactiveConfirmOpen] = useState(false);
@@ -133,7 +133,7 @@ const UserManagement = () => {
         phoneNumber: editFormData.phoneNumber,
         address: editFormData.address
       };
-      
+
       const updated = await userService.updateUser(editFormData._id, payload);
       toast.success('User updated successfully');
       setUsers(users.map(u => u._id === updated._id ? { ...u, ...updated } : u));
@@ -215,7 +215,7 @@ const UserManagement = () => {
 
       {/* KPI Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <StatCard
             title="Total Registered Users"
             value={totalUsersCount}
@@ -223,7 +223,7 @@ const UserManagement = () => {
             color={theme.palette.primary.main}
           />
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <StatCard
             title="Active Users"
             value={activeUsersCount}
@@ -231,7 +231,7 @@ const UserManagement = () => {
             color={theme.palette.success.main}
           />
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <StatCard
             title="Inactive Users"
             value={inactiveUsersCount}
@@ -314,7 +314,7 @@ const UserManagement = () => {
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleCloseMenu}
-        PaperProps={{ elevation: 3, sx: { width: 180, borderRadius: 2, mt: 1 } }}
+        slotProps={{ paper: { elevation: 3, sx: { width: 180, borderRadius: 2, mt: 1 } } }}
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
@@ -329,7 +329,7 @@ const UserManagement = () => {
       </Menu>
 
       {/* Edit User Modal */}
-      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: 2 } }}>
+      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} fullWidth maxWidth="sm" slotProps={{ paper: { sx: { borderRadius: 2 } } }}>
         <DialogTitle sx={{ fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>Edit User Information</span>
           <IconButton onClick={() => setEditDialogOpen(false)} size="small"><CloseIcon /></IconButton>
@@ -337,7 +337,7 @@ const UserManagement = () => {
         <form onSubmit={handleUpdateUser}>
           <DialogContent dividers>
             <Grid container spacing={2}>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   required
                   name="name"
@@ -346,7 +346,7 @@ const UserManagement = () => {
                   onChange={handleEditChange}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   required
                   type="email"
@@ -356,7 +356,7 @@ const UserManagement = () => {
                   onChange={handleEditChange}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Select
                   required
                   name="role"
@@ -366,7 +366,7 @@ const UserManagement = () => {
                   options={['Admin', 'Individual', 'Manager', 'Driver']}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Select
                   required
                   name="status"
@@ -376,7 +376,7 @@ const UserManagement = () => {
                   options={['Active', 'Inactive']}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   name="phoneNumber"
                   label="Phone Number"
@@ -384,7 +384,7 @@ const UserManagement = () => {
                   onChange={handleEditChange}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   name="address"
                   label="Address"
