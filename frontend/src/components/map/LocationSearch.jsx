@@ -76,7 +76,7 @@ const LocationSearch = ({ label, value, onChange, required, error, helperText })
           required={required}
           error={error}
           helperText={helperText}
-          InputProps={{
+          slotProps={{ input: {
             startAdornment: (
               <InputAdornment position="start">
                 <SearchIcon color="action" />
@@ -87,7 +87,7 @@ const LocationSearch = ({ label, value, onChange, required, error, helperText })
                 <CircularProgress size={20} />
               </InputAdornment>
             ) : null
-          }}
+          } }}
           onClick={() => {
             if (results.length > 0) setOpen(true);
           }}
@@ -126,7 +126,7 @@ const LocationSearch = ({ label, value, onChange, required, error, helperText })
                     </ListItemIcon>
                     <ListItemText 
                       primary={place.display_name} 
-                      primaryTypographyProps={{ variant: 'body2', noWrap: false }}
+                      slotProps={{ primary: { variant: 'body2', noWrap: false } }}
                     />
                   </ListItemButton>
                 ))

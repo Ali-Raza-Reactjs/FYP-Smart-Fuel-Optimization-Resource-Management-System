@@ -1,3 +1,4 @@
+const { ApiResponseModel } = require("../utils/classes");
 const Budget = require('../models/Budget');
 const FuelRecord = require('../models/FuelRecord');
 const Maintenance = require('../models/Maintenance');
@@ -46,7 +47,8 @@ const calculateActualSpend = async (orgId, month, year) => {
 // @route   GET /api/budgets
 // @access  Private (Admin/Manager)
 exports.getBudgets = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const orgId = req.user.organization;
     const budgets = await Budget.find({ organization: orgId }).sort({ year: -1, month: -1 });
 
@@ -59,7 +61,10 @@ exports.getBudgets = async (req, res, next) => {
       };
     }));
 
-    res.status(200).json(enrichedBudgets);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = enrichedBudgets;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -69,7 +74,8 @@ exports.getBudgets = async (req, res, next) => {
 // @route   GET /api/budgets/:id
 // @access  Private (Admin/Manager)
 exports.getBudget = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const budget = await Budget.findById(req.params.id);
 
     if (!budget) {
@@ -84,10 +90,13 @@ exports.getBudget = async (req, res, next) => {
 
     const actualSpend = await calculateActualSpend(budget.organization, budget.month, budget.year);
 
-    res.status(200).json({
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = {
       ...budget.toObject(),
       actualSpend
-    });
+    };
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     res.status(400);
     next(error);
@@ -98,7 +107,8 @@ exports.getBudget = async (req, res, next) => {
 // @route   POST /api/budgets
 // @access  Private (Admin/Manager)
 exports.createBudget = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     req.body.organization = req.user.organization;
 
     // Check if budget already exists for this month/year
@@ -114,7 +124,10 @@ exports.createBudget = async (req, res, next) => {
     }
 
     const budget = await Budget.create(req.body);
-    res.status(201).json(budget);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = budget;
+    return res.status(201).json(apiResponseModel);
   } catch (error) {
     res.status(400);
     next(error);
@@ -125,7 +138,8 @@ exports.createBudget = async (req, res, next) => {
 // @route   PUT /api/budgets/:id
 // @access  Private (Admin/Manager)
 exports.updateBudget = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     let budget = await Budget.findById(req.params.id);
 
     if (!budget) {
@@ -143,7 +157,10 @@ exports.updateBudget = async (req, res, next) => {
       runValidators: true
     });
 
-    res.status(200).json(budget);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = budget;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     res.status(400);
     next(error);
@@ -154,7 +171,8 @@ exports.updateBudget = async (req, res, next) => {
 // @route   DELETE /api/budgets/:id
 // @access  Private (Admin/Manager)
 exports.deleteBudget = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const budget = await Budget.findById(req.params.id);
 
     if (!budget) {
@@ -169,7 +187,10 @@ exports.deleteBudget = async (req, res, next) => {
 
     await budget.deleteOne();
 
-    res.status(200).json({ success: true, data: {} });
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = { success: true, data: {} };
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     res.status(400);
     next(error);

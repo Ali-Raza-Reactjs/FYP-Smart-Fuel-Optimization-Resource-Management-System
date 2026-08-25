@@ -1,12 +1,13 @@
+import { fetchMethod } from "../utils/helper";
 import api from './api';
 
 const API_URL = '/reports';
 
 const exportFinancialReport = async (startDate, endDate) => {
   // We need to handle blob response for file download
-  const response = await api.get(`${API_URL}/export?startDate=${startDate}&endDate=${endDate}`, {
+  const { response } = await fetchMethod(() => api.get(`${API_URL}/export?startDate=${startDate}&endDate=${endDate}`, {
     responseType: 'blob', // Important for downloading files
-  });
+  }));
   
   // Create a URL and trigger download
   const url = window.URL.createObjectURL(new Blob([response.data]));

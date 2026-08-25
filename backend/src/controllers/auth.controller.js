@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
+const { ApiResponseModel } = require("../utils/classes");
 
 // Generate JWT
 const generateToken = (id) => {
@@ -12,6 +13,7 @@ const generateToken = (id) => {
 // @route   POST /api/auth/register
 // @access  Public
 exports.register = async (req, res, next) => {
+  let apiResponseModel = new ApiResponseModel();
   try {
     const { name, email, password, role, contactNumber } = req.body;
 
@@ -39,14 +41,17 @@ exports.register = async (req, res, next) => {
     });
 
     if (user) {
-      res.status(201).json({
+      apiResponseModel.status = true;
+      apiResponseModel.msg = "Success";
+      apiResponseModel.data = {
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
         profile: user.profile,
         token: generateToken(user._id),
-      });
+      };
+      return res.status(200).json(apiResponseModel);
     } else {
       res.status(400);
       throw new Error("Invalid user data");
@@ -60,6 +65,7 @@ exports.register = async (req, res, next) => {
 // @route   POST /api/auth/login
 // @access  Public
 exports.login = async (req, res, next) => {
+  let apiResponseModel = new ApiResponseModel();
   try {
     const { email, password } = req.body;
 
@@ -72,27 +78,30 @@ exports.login = async (req, res, next) => {
     );
 
     if (!user) {
-      res.status(401);
-      throw new Error("Invalid credentials");
+      apiResponseModel.msg = "Invalid credentials";
+      return res.status(401).json(apiResponseModel);
     }
 
     // Check if password matches
     const isMatch = await user.matchPassword(password);
 
     if (!isMatch) {
-      res.status(401);
-      throw new Error("Invalid credentials");
+      apiResponseModel.msg = "Invalid credentials";
+      return res.status(401).json(apiResponseModel);
     }
-
-    res.json({
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Login successful";
+    apiResponseModel.data = {
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
       token: generateToken(user._id),
-    });
+    };
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
-    next(error);
+    apiResponseModel.msg = error.message;
+    return res.status(500).json(apiResponseModel);
   }
 };
 
@@ -100,6 +109,7 @@ exports.login = async (req, res, next) => {
 // @route   PUT /api/auth/change-password
 // @access  Private
 exports.changePassword = async (req, res, next) => {
+  let apiResponseModel = new ApiResponseModel();
   try {
     const { currentPassword, newPassword } = req.body;
 
@@ -126,9 +136,13 @@ exports.changePassword = async (req, res, next) => {
     user.password = newPassword;
     await user.save();
 
-    res
-      .status(200)
-      .json({ success: true, message: "Password updated successfully" });
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = {
+      success: true,
+      message: "Password updated successfully",
+    };
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -138,8 +152,15 @@ exports.changePassword = async (req, res, next) => {
 // @route   POST /api/auth/logout
 // @access  Private
 exports.logout = async (req, res, next) => {
+  let apiResponseModel = new ApiResponseModel();
   try {
-    res.status(200).json({ success: true, message: "Logged out successfully" });
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = {
+      success: true,
+      message: "Logged out successfully",
+    };
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }

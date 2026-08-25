@@ -1,3 +1,4 @@
+const { ApiResponseModel } = require("../utils/classes");
 const Maintenance = require('../models/Maintenance');
 const Vehicle = require('../models/Vehicle');
 
@@ -28,14 +29,18 @@ const checkVehicleAccess = async (vehicleId, user) => {
 // @route   GET /api/maintenance/vehicle/:vehicleId
 // @access  Private (Admin/Manager/Driver)
 exports.getMaintenanceLogsByVehicle = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const { vehicleId } = req.params;
     
     // Check access
     await checkVehicleAccess(vehicleId, req.user);
 
     const logs = await Maintenance.find({ vehicle: vehicleId }).sort({ date: -1 });
-    res.status(200).json(logs);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = logs;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     res.status(403);
     next(error);
@@ -46,7 +51,8 @@ exports.getMaintenanceLogsByVehicle = async (req, res, next) => {
 // @route   GET /api/maintenance/:id
 // @access  Private
 exports.getMaintenanceLog = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const log = await Maintenance.findById(req.params.id);
 
     if (!log) {
@@ -56,7 +62,10 @@ exports.getMaintenanceLog = async (req, res, next) => {
 
     await checkVehicleAccess(log.vehicle, req.user);
 
-    res.status(200).json(log);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = log;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     res.status(error.message === 'Maintenance log not found' ? 404 : 403);
     next(error);
@@ -67,7 +76,8 @@ exports.getMaintenanceLog = async (req, res, next) => {
 // @route   POST /api/maintenance
 // @access  Private (Admin/Manager)
 exports.createMaintenanceLog = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const { vehicle } = req.body;
     
     if (!vehicle) {
@@ -78,7 +88,10 @@ exports.createMaintenanceLog = async (req, res, next) => {
     await checkVehicleAccess(vehicle, req.user);
 
     const log = await Maintenance.create(req.body);
-    res.status(201).json(log);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = log;
+    return res.status(201).json(apiResponseModel);
   } catch (error) {
     res.status(400);
     next(error);
@@ -89,7 +102,8 @@ exports.createMaintenanceLog = async (req, res, next) => {
 // @route   PUT /api/maintenance/:id
 // @access  Private (Admin/Manager)
 exports.updateMaintenanceLog = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     let log = await Maintenance.findById(req.params.id);
 
     if (!log) {
@@ -104,7 +118,10 @@ exports.updateMaintenanceLog = async (req, res, next) => {
       runValidators: true
     });
 
-    res.status(200).json(log);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = log;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     res.status(400);
     next(error);
@@ -115,7 +132,8 @@ exports.updateMaintenanceLog = async (req, res, next) => {
 // @route   DELETE /api/maintenance/:id
 // @access  Private (Admin/Manager)
 exports.deleteMaintenanceLog = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const log = await Maintenance.findById(req.params.id);
 
     if (!log) {
@@ -127,7 +145,10 @@ exports.deleteMaintenanceLog = async (req, res, next) => {
 
     await log.deleteOne();
 
-    res.status(200).json({ success: true, data: {} });
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = { success: true, data: {} };
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     res.status(400);
     next(error);

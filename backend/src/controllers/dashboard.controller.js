@@ -1,3 +1,4 @@
+const { ApiResponseModel } = require("../utils/classes");
 const User = require('../models/User');
 const Vehicle = require('../models/Vehicle');
 const Trip = require('../models/Trip');
@@ -8,7 +9,8 @@ const Maintenance = require('../models/Maintenance');
 // @route   GET /api/dashboard
 // @access  Private
 exports.getDashboardStats = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const { role, organization, _id } = req.user;
     let data = {};
 
@@ -26,7 +28,9 @@ exports.getDashboardStats = async (req, res, next) => {
         totalDrivers = 0;
       } else {
         if (!organization) {
-          return res.status(200).json({
+          return apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = {
             hasOrganization: false,
             totalVehicles: 0,
             activeVehicles: 0,
@@ -34,7 +38,8 @@ exports.getDashboardStats = async (req, res, next) => {
             activeTrips: 0,
             currentMonthSpend: 0,
             historicalSpend: []
-          });
+          };
+    return res.status(200).json(apiResponseModel);
         }
 
         const vehicles = await Vehicle.find({ organization }).select('_id status');
@@ -147,7 +152,10 @@ exports.getDashboardStats = async (req, res, next) => {
       };
     }
 
-    res.status(200).json(data);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = data;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }

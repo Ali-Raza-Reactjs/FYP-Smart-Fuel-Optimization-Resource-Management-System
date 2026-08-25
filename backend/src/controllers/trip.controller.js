@@ -1,3 +1,4 @@
+const { ApiResponseModel } = require("../utils/classes");
 const Trip = require('../models/Trip');
 const Vehicle = require('../models/Vehicle');
 const Organization = require('../models/Organization');
@@ -24,7 +25,8 @@ const checkVehicleAccess = async (vehicleId, user) => {
 // @route   GET /api/trips
 // @access  Private (Admin/Manager/Driver)
 exports.getTrips = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     let query;
 
     if (req.user.role === 'Admin' || req.user.role === 'Manager') {
@@ -45,7 +47,10 @@ exports.getTrips = async (req, res, next) => {
       .populate('driver', 'name')
       .sort({ startTime: -1 });
 
-    res.status(200).json(trips);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = trips;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -55,7 +60,8 @@ exports.getTrips = async (req, res, next) => {
 // @route   GET /api/trips/:id
 // @access  Private
 exports.getTrip = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const trip = await Trip.findById(req.params.id)
       .populate('vehicle')
       .populate('driver', 'name email');
@@ -67,7 +73,10 @@ exports.getTrip = async (req, res, next) => {
 
     await checkVehicleAccess(trip.vehicle._id, req.user);
 
-    res.status(200).json(trip);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = trip;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     res.status(error.message === 'Trip not found' ? 404 : 403);
     next(error);
@@ -78,7 +87,8 @@ exports.getTrip = async (req, res, next) => {
 // @route   POST /api/trips
 // @access  Private
 exports.createTrip = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const { vehicle, startCoordinates, endCoordinates } = req.body;
     
     if (!vehicle) {
@@ -172,7 +182,10 @@ exports.createTrip = async (req, res, next) => {
       }
     }
 
-    res.status(201).json(responseObj);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = responseObj;
+    return res.status(201).json(apiResponseModel);
   } catch (error) {
     // Keep the status set in the try block if it exists
     if (!res.statusCode || res.statusCode === 200) res.status(400);
@@ -184,7 +197,8 @@ exports.createTrip = async (req, res, next) => {
 // @route   PUT /api/trips/:id
 // @access  Private
 exports.updateTrip = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     let trip = await Trip.findById(req.params.id);
 
     if (!trip) {
@@ -211,7 +225,10 @@ exports.updateTrip = async (req, res, next) => {
       runValidators: true
     });
 
-    res.status(200).json(trip);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = trip;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     res.status(400);
     next(error);
@@ -222,7 +239,8 @@ exports.updateTrip = async (req, res, next) => {
 // @route   DELETE /api/trips/:id
 // @access  Private (Admin/Manager)
 exports.deleteTrip = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const trip = await Trip.findById(req.params.id);
 
     if (!trip) {
@@ -239,7 +257,10 @@ exports.deleteTrip = async (req, res, next) => {
 
     await trip.deleteOne();
 
-    res.status(200).json({ success: true, data: {} });
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = { success: true, data: {} };
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     res.status(400);
     next(error);

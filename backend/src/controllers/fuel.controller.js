@@ -1,3 +1,4 @@
+const { ApiResponseModel } = require("../utils/classes");
 const FuelRecord = require('../models/FuelRecord');
 const Vehicle = require('../models/Vehicle');
 const Budget = require('../models/Budget');
@@ -32,7 +33,8 @@ const checkVehicleAccess = async (vehicleId, user) => {
 // @route   GET /api/fuel/vehicle/:vehicleId
 // @access  Private
 exports.getFuelRecordsByVehicle = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const { vehicleId } = req.params;
     await checkVehicleAccess(vehicleId, req.user);
 
@@ -49,14 +51,17 @@ exports.getFuelRecordsByVehicle = async (req, res, next) => {
       totalLiters += record.liters;
     });
 
-    res.status(200).json({
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = {
       records,
       analytics: {
         totalCost,
         totalLiters,
         recordCount: records.length
       }
-    });
+    };
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     res.status(403);
     next(error);
@@ -67,7 +72,8 @@ exports.getFuelRecordsByVehicle = async (req, res, next) => {
 // @route   GET /api/fuel/:id
 // @access  Private
 exports.getFuelRecord = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const record = await FuelRecord.findById(req.params.id).populate('driver', 'name');
 
     if (!record) {
@@ -77,7 +83,10 @@ exports.getFuelRecord = async (req, res, next) => {
 
     await checkVehicleAccess(record.vehicle, req.user);
 
-    res.status(200).json(record);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = record;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     res.status(error.message === 'Fuel record not found' ? 404 : 403);
     next(error);
@@ -88,7 +97,8 @@ exports.getFuelRecord = async (req, res, next) => {
 // @route   POST /api/fuel
 // @access  Private
 exports.createFuelRecord = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const { vehicle } = req.body;
     
     if (!vehicle) {
@@ -181,7 +191,10 @@ exports.createFuelRecord = async (req, res, next) => {
       console.error('Error triggering budget notification:', notifyErr);
     }
 
-    res.status(201).json(record);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = record;
+    return res.status(201).json(apiResponseModel);
   } catch (error) {
     res.status(400);
     next(error);
@@ -192,7 +205,8 @@ exports.createFuelRecord = async (req, res, next) => {
 // @route   PUT /api/fuel/:id
 // @access  Private (Admin/Manager)
 exports.updateFuelRecord = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     let record = await FuelRecord.findById(req.params.id);
 
     if (!record) {
@@ -217,7 +231,10 @@ exports.updateFuelRecord = async (req, res, next) => {
       runValidators: true
     });
 
-    res.status(200).json(record);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = record;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     res.status(400);
     next(error);
@@ -228,7 +245,8 @@ exports.updateFuelRecord = async (req, res, next) => {
 // @route   DELETE /api/fuel/:id
 // @access  Private (Admin/Manager)
 exports.deleteFuelRecord = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const record = await FuelRecord.findById(req.params.id);
 
     if (!record) {
@@ -253,7 +271,10 @@ exports.deleteFuelRecord = async (req, res, next) => {
 
     await record.deleteOne();
 
-    res.status(200).json({ success: true, data: {} });
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = { success: true, data: {} };
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     res.status(400);
     next(error);

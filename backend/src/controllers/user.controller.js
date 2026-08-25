@@ -1,20 +1,25 @@
+const { ApiResponseModel } = require("../utils/classes");
 const User = require('../models/User');
 
 // @desc    Get user profile
 // @route   GET /api/users/profile
 // @access  Private
 exports.getUserProfile = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const user = await User.findById(req.user._id);
 
     if (user) {
-      res.json({
+      apiResponseModel.status = true;
+      apiResponseModel.msg = "Success";
+      apiResponseModel.data = {
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
         profile: user.profile
-      });
+      };
+      return res.status(200).json(apiResponseModel);
     } else {
       res.status(404);
       throw new Error('User not found');
@@ -28,7 +33,8 @@ exports.getUserProfile = async (req, res, next) => {
 // @route   PUT /api/users/profile
 // @access  Private
 exports.updateUserProfile = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const user = await User.findById(req.user._id);
 
     if (user) {
@@ -52,13 +58,16 @@ exports.updateUserProfile = async (req, res, next) => {
 
       const updatedUser = await user.save();
 
-      res.json({
+      apiResponseModel.status = true;
+      apiResponseModel.msg = "Success";
+      apiResponseModel.data = {
         _id: updatedUser._id,
         name: updatedUser.name,
         email: updatedUser.email,
         role: updatedUser.role,
         profile: updatedUser.profile
-      });
+      };
+      return res.status(200).json(apiResponseModel);
     } else {
       res.status(404);
       throw new Error('User not found');
@@ -72,9 +81,13 @@ exports.updateUserProfile = async (req, res, next) => {
 // @route   GET /api/users
 // @access  Private (Admin)
 exports.getUsers = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const users = await User.find({}).select('-password');
-    res.status(200).json(users);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = users;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -84,13 +97,17 @@ exports.getUsers = async (req, res, next) => {
 // @route   GET /api/users/:id
 // @access  Private (Admin)
 exports.getUserById = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const user = await User.findById(req.params.id).select('-password');
     if (!user) {
       res.status(404);
       throw new Error('User not found');
     }
-    res.status(200).json(user);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = user;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -100,7 +117,8 @@ exports.getUserById = async (req, res, next) => {
 // @route   PUT /api/users/:id
 // @access  Private (Admin)
 exports.updateUser = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const user = await User.findById(req.params.id);
 
     if (!user) {
@@ -124,14 +142,17 @@ exports.updateUser = async (req, res, next) => {
     }
 
     const updatedUser = await user.save();
-    res.status(200).json({
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = {
       _id: updatedUser._id,
       name: updatedUser.name,
       email: updatedUser.email,
       role: updatedUser.role,
       status: updatedUser.status,
       profile: updatedUser.profile
-    });
+    };
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -141,7 +162,8 @@ exports.updateUser = async (req, res, next) => {
 // @route   DELETE /api/users/:id
 // @access  Private (Admin)
 exports.deleteUser = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const user = await User.findById(req.params.id);
     if (!user) {
       res.status(404);
@@ -149,7 +171,10 @@ exports.deleteUser = async (req, res, next) => {
     }
 
     await user.deleteOne();
-    res.status(200).json({ success: true, message: 'User deleted successfully' });
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = { success: true, message: 'User deleted successfully' };
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -159,9 +184,13 @@ exports.deleteUser = async (req, res, next) => {
 // @route   DELETE /api/users/inactive
 // @access  Private (Admin)
 exports.deleteInactiveUsers = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const result = await User.deleteMany({ status: 'Inactive' });
-    res.status(200).json({ success: true, message: `${result.deletedCount} inactive users deleted` });
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = { success: true, message: `${result.deletedCount} inactive users deleted` };
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }

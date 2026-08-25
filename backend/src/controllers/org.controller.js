@@ -1,3 +1,4 @@
+const { ApiResponseModel } = require("../utils/classes");
 const Organization = require('../models/Organization');
 const User = require('../models/User');
 
@@ -5,9 +6,13 @@ const User = require('../models/User');
 // @route   GET /api/organizations
 // @access  Private/Admin
 exports.getOrganizations = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const organizations = await Organization.find().populate('admin', 'name email');
-    res.status(200).json(organizations);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = organizations;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -17,7 +22,8 @@ exports.getOrganizations = async (req, res, next) => {
 // @route   GET /api/organizations/:id
 // @access  Private/Admin
 exports.getOrganization = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const organization = await Organization.findById(req.params.id).populate('admin', 'name email');
 
     if (!organization) {
@@ -25,7 +31,10 @@ exports.getOrganization = async (req, res, next) => {
       throw new Error('Organization not found');
     }
 
-    res.status(200).json(organization);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = organization;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -35,7 +44,8 @@ exports.getOrganization = async (req, res, next) => {
 // @route   POST /api/organizations
 // @access  Private/Admin
 exports.createOrganization = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     // Add user to req.body
     req.body.admin = req.user._id;
 
@@ -46,7 +56,10 @@ exports.createOrganization = async (req, res, next) => {
       await User.findByIdAndUpdate(req.user._id, { organization: organization._id });
     }
 
-    res.status(201).json(organization);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = organization;
+    return res.status(201).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -56,7 +69,8 @@ exports.createOrganization = async (req, res, next) => {
 // @route   PUT /api/organizations/:id
 // @access  Private/Admin
 exports.updateOrganization = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     let organization = await Organization.findById(req.params.id);
 
     if (!organization) {
@@ -76,7 +90,10 @@ exports.updateOrganization = async (req, res, next) => {
       runValidators: true
     });
 
-    res.status(200).json(organization);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = organization;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -86,7 +103,8 @@ exports.updateOrganization = async (req, res, next) => {
 // @route   DELETE /api/organizations/:id
 // @access  Private/Admin
 exports.deleteOrganization = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const organization = await Organization.findById(req.params.id);
 
     if (!organization) {
@@ -101,7 +119,10 @@ exports.deleteOrganization = async (req, res, next) => {
 
     await organization.deleteOne();
 
-    res.status(200).json({ success: true, data: {} });
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = { success: true, data: {} };
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -111,7 +132,8 @@ exports.deleteOrganization = async (req, res, next) => {
 // @route   PUT /api/organizations/:id/crisis
 // @access  Private/Admin/Manager
 exports.toggleCrisisMode = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const organization = await Organization.findById(req.params.id);
 
     if (!organization) {
@@ -127,7 +149,10 @@ exports.toggleCrisisMode = async (req, res, next) => {
     organization.crisisMode = !organization.crisisMode;
     await organization.save();
 
-    res.status(200).json({ success: true, crisisMode: organization.crisisMode });
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = { success: true, crisisMode: organization.crisisMode };
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }

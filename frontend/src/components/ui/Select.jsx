@@ -35,13 +35,13 @@ const Select = ({
       error={error}
       helperText={helperText}
       disabled={disabled}
-      InputProps={{
+      slotProps={{ input: {
         startAdornment: startIcon ? (
           <InputAdornment position="start">
             {startIcon}
           </InputAdornment>
         ) : {},
-      }}
+      } }}
       sx={{
         ...sx,
       }}

@@ -31,13 +31,13 @@ const DataTable = ({
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
               sx={{ width: { xs: '100%', sm: 320 }, bgcolor: 'background.paper', borderRadius: 1 }}
-              InputProps={{
+              slotProps={{ input: {
                 startAdornment: (
                   <InputAdornment position="start">
                     <SearchIcon fontSize="small" />
                   </InputAdornment>
                 ),
-              }}
+              } }}
             />
           )}
           {showFilter && (

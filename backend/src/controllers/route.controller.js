@@ -1,10 +1,12 @@
+const { ApiResponseModel } = require("../utils/classes");
 const Vehicle = require('../models/Vehicle');
 
 // @desc    Get optimized route details (distance, duration, fuel, geometry)
 // @route   POST /api/routes/optimize
 // @access  Private
 exports.optimizeRoute = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const { startCoordinates, endCoordinates, vehicleId } = req.body;
 
     if (!startCoordinates || !endCoordinates) {
@@ -53,12 +55,15 @@ exports.optimizeRoute = async (req, res, next) => {
     // 3. Calculate Fuel
     const estimatedFuel = (distanceKm * efficiency) / 100;
 
-    res.status(200).json({
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = {
       distance: Number(distanceKm.toFixed(2)),
       estimatedDuration: Math.round(durationMinutes),
       estimatedFuel: Number(estimatedFuel.toFixed(2)),
       geometry: JSON.stringify(route.geometry)
-    });
+    };
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }

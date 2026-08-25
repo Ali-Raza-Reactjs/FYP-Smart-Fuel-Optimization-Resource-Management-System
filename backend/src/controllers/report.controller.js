@@ -1,3 +1,4 @@
+const { ApiResponseModel } = require("../utils/classes");
 const FuelRecord = require('../models/FuelRecord');
 const Maintenance = require('../models/Maintenance');
 const Vehicle = require('../models/Vehicle');
@@ -6,7 +7,8 @@ const Vehicle = require('../models/Vehicle');
 // @route   GET /api/reports/export
 // @access  Private (Admin/Manager)
 exports.exportFinancialReport = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const { startDate, endDate } = req.query;
     const orgId = req.user.organization;
 

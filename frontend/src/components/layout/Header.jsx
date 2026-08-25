@@ -203,7 +203,7 @@ const Header = ({ handleDrawerToggle }) => {
               {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
             </Avatar>
             <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-              <Typography variant="subtitle2" fontWeight="600" lineHeight={1.2}>
+              <Typography variant="subtitle2" fontWeight="600" sx={{ lineHeight: 1.2 }}>
                 {user.name}
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textTransform: 'capitalize' }}>

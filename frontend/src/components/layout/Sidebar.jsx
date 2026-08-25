@@ -84,12 +84,12 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
             </ListItemIcon>
             <ListItemText
               primary={item.text}
-              primaryTypographyProps={{
+              slotProps={{ primary: { sx: {
                 fontWeight: active ? 600 : 500,
                 fontSize: '0.9rem',
                 letterSpacing: 0.2,
                 opacity: active ? 1 : 0.8
-              }}
+              } } }}
             />
           </ListItemButton>
         </ListItem>

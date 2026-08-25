@@ -86,7 +86,7 @@ const MaintenanceList = () => {
         title="Maintenance Logs"
         subtitle={`${vehicle?.make || ''} ${vehicle?.model || ''} (${vehicle?.licensePlate || ''})`}
         action={
-          <Box display="flex" alignItems="center" gap={3}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
             <Typography variant="h6" color="secondary" fontWeight="bold">
               Total Cost: ${totalCost.toFixed(2)}
             </Typography>

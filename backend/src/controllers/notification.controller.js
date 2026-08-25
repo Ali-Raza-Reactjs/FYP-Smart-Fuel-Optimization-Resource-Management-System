@@ -1,12 +1,17 @@
+const { ApiResponseModel } = require("../utils/classes");
 const Notification = require('../models/Notification');
 
 // @desc    Get user notifications
 // @route   GET /api/notifications
 // @access  Private
 exports.getNotifications = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const notifications = await Notification.find({ user: req.user._id }).sort({ createdAt: -1 }).limit(20);
-    res.status(200).json(notifications);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = notifications;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -16,7 +21,8 @@ exports.getNotifications = async (req, res, next) => {
 // @route   PUT /api/notifications/:id/read
 // @access  Private
 exports.markAsRead = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     let notification = await Notification.findById(req.params.id);
 
     if (!notification) {
@@ -32,7 +38,10 @@ exports.markAsRead = async (req, res, next) => {
     notification.isRead = true;
     await notification.save();
 
-    res.status(200).json(notification);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = notification;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -42,12 +51,16 @@ exports.markAsRead = async (req, res, next) => {
 // @route   PUT /api/notifications/read-all
 // @access  Private
 exports.markAllAsRead = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     await Notification.updateMany(
       { user: req.user._id, isRead: false },
       { $set: { isRead: true } }
     );
-    res.status(200).json({ success: true });
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = { success: true };
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }

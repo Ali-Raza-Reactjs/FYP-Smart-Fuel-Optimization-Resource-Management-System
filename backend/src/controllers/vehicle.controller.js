@@ -1,3 +1,4 @@
+const { ApiResponseModel } = require("../utils/classes");
 const Vehicle = require('../models/Vehicle');
 const User = require('../models/User');
 
@@ -5,7 +6,8 @@ const User = require('../models/User');
 // @route   GET /api/vehicles
 // @access  Private
 exports.getVehicles = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     let queryObj = {};
 
     if (req.user.role === 'Individual') {
@@ -48,7 +50,10 @@ exports.getVehicles = async (req, res, next) => {
       .populate('driver', 'name email')
       .populate('owner', 'name email profile.phoneNumber');
 
-    res.status(200).json(vehicles);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = vehicles;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -58,7 +63,8 @@ exports.getVehicles = async (req, res, next) => {
 // @route   GET /api/vehicles/:id
 // @access  Private
 exports.getVehicle = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const vehicle = await Vehicle.findById(req.params.id)
       .populate('organization', 'name')
       .populate('driver', 'name email profile.phoneNumber');
@@ -80,7 +86,10 @@ exports.getVehicle = async (req, res, next) => {
       throw new Error('Not authorized to access this vehicle');
     }
 
-    res.status(200).json(vehicle);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = vehicle;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -90,7 +99,8 @@ exports.getVehicle = async (req, res, next) => {
 // @route   POST /api/vehicles
 // @access  Private (Admin/Manager/Individual)
 exports.createVehicle = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     // Check if user has an organization (exempting Admin and Individual roles)
     if (!req.user.organization && req.user.role !== 'Admin' && req.user.role !== 'Individual') {
       res.status(400);
@@ -106,7 +116,10 @@ exports.createVehicle = async (req, res, next) => {
     req.body.owner = req.body.owner || req.user._id;
 
     const vehicle = await Vehicle.create(req.body);
-    res.status(201).json(vehicle);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = vehicle;
+    return res.status(201).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -116,7 +129,8 @@ exports.createVehicle = async (req, res, next) => {
 // @route   PUT /api/vehicles/:id
 // @access  Private (Admin/Manager/Individual)
 exports.updateVehicle = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     let vehicle = await Vehicle.findById(req.params.id);
 
     if (!vehicle) {
@@ -146,7 +160,10 @@ exports.updateVehicle = async (req, res, next) => {
       runValidators: true
     });
 
-    res.status(200).json(vehicle);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = vehicle;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -156,7 +173,8 @@ exports.updateVehicle = async (req, res, next) => {
 // @route   DELETE /api/vehicles/:id
 // @access  Private (Admin/Manager/Individual)
 exports.deleteVehicle = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     const vehicle = await Vehicle.findById(req.params.id);
 
     if (!vehicle) {
@@ -191,7 +209,10 @@ exports.deleteVehicle = async (req, res, next) => {
 
     await vehicle.deleteOne();
 
-    res.status(200).json({ success: true, data: {} });
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = { success: true, data: {} };
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }
@@ -201,7 +222,8 @@ exports.deleteVehicle = async (req, res, next) => {
 // @route   GET /api/vehicles/drivers/available
 // @access  Private (Admin/Manager)
 exports.getAvailableDrivers = async (req, res, next) => {
-  try {
+    let apiResponseModel = new ApiResponseModel();
+try {
     // Find all users with role 'Driver'
     let query = { role: 'Driver' };
     
@@ -215,7 +237,10 @@ exports.getAvailableDrivers = async (req, res, next) => {
     }
     
     const drivers = await User.find(query).select('name email');
-    res.status(200).json(drivers);
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Success";
+    apiResponseModel.data = drivers;
+    return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
   }

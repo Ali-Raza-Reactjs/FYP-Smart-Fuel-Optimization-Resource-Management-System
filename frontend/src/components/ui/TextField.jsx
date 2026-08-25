@@ -43,7 +43,7 @@ const TextField = ({
       multiline={multiline}
       rows={rows}
       disabled={disabled}
-      InputProps={{
+      slotProps={{ input: {
         startAdornment: startIcon ? (
           <InputAdornment position="start">
             {startIcon}
@@ -54,7 +54,7 @@ const TextField = ({
             {endIcon}
           </InputAdornment>
         ) : {},
-      }}
+      } }}
       sx={{
         ...sx,
       }}

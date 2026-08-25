@@ -258,7 +258,7 @@ const Dashboard = () => {
 
                   {stats.assignedVehicle ? (
                     <Box sx={{ mt: 3, p: 3, backgroundColor: 'background.default', borderRadius: 2, border: `1px solid ${theme.palette.divider}` }}>
-                      <Box display="flex" alignItems="center" mb={2}>
+                      <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                         <Box sx={{ backgroundColor: 'primary.main', color: '#fff', p: 1.5, borderRadius: 2, mr: 2, display: 'flex' }}>
                           <DirectionsCarIcon />
                         </Box>
@@ -278,7 +278,7 @@ const Dashboard = () => {
                     <Typography variant="subtitle2" fontWeight="bold" color="text.secondary" textTransform="uppercase" gutterBottom letterSpacing={0.5}>
                       Month-to-Date Fuel
                     </Typography>
-                    <Box display="flex" alignItems="baseline" mt={1} gap={1}>
+                    <Box sx={{ display: "flex", alignItems: "baseline", mt: 1, gap: 1 }}>
                       <Typography variant="h3" fontWeight="bold" color="text.primary">
                         {(stats.monthlyFuel?.totalLiters ?? 0).toFixed(1)}
                       </Typography>
