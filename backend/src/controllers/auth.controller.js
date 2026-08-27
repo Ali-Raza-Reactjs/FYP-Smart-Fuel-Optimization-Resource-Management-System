@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const { ApiResponseModel } = require("../utils/classes");
+const { isSuperAdmin } = require("../utils/adminAccess");
 
 // Generate JWT
 const generateToken = (id) => {
@@ -15,7 +16,7 @@ const generateToken = (id) => {
 exports.register = async (req, res, next) => {
   let apiResponseModel = new ApiResponseModel();
   try {
-    const { name, email, password, role, contactNumber } = req.body;
+    const { name, email, password, contactNumber } = req.body;
 
     // Normalize email to lowercase
     const normalizedEmail = email ? email.toLowerCase().trim() : "";
@@ -33,7 +34,7 @@ exports.register = async (req, res, next) => {
       name,
       email: normalizedEmail,
       password,
-      role: role || "Individual",
+      role: "Individual",
       profile: {
         phoneNumber: contactNumber || "",
         address: "",
@@ -48,6 +49,7 @@ exports.register = async (req, res, next) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        adminRole: user.role === 'Admin' && isSuperAdmin(user) ? 'superAdmin' : user.adminRole,
         profile: user.profile,
         token: generateToken(user._id),
       };
@@ -82,6 +84,11 @@ exports.login = async (req, res, next) => {
       return res.status(401).json(apiResponseModel);
     }
 
+    if (user.status !== 'Active') {
+      apiResponseModel.msg = "This account is inactive. Please contact an administrator.";
+      return res.status(401).json(apiResponseModel);
+    }
+
     // Check if password matches
     const isMatch = await user.matchPassword(password);
 
@@ -96,6 +103,7 @@ exports.login = async (req, res, next) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      adminRole: user.role === 'Admin' && isSuperAdmin(user) ? 'superAdmin' : user.adminRole,
       token: generateToken(user._id),
     };
     return res.status(200).json(apiResponseModel);

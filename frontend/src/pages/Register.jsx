@@ -1,22 +1,20 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { Box, Typography, Paper, MenuItem, useTheme, IconButton, Grid } from '@mui/material';
+import { Box, Typography, Paper, useTheme, IconButton, Grid } from '@mui/material';
 import Button from '../components/ui/Button';
 import TextField from '../components/ui/TextField';
-import Select from '../components/ui/Select';
 import LocalGasStationIcon from '@mui/icons-material/LocalGasStation';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
-import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined';
 
 const Register = () => {
   const theme = useTheme();
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'Individual', contactNumber: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', contactNumber: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { register } = useContext(AuthContext);
@@ -158,20 +156,6 @@ const Register = () => {
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   }
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Select
-                  required
-                  name="role"
-                  label="Account Role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  startIcon={<BadgeOutlinedIcon sx={{ color: 'text.secondary' }} />}
-                  options={[
-                    { value: 'Individual', label: 'Individual' },
-                    { value: 'Admin', label: 'Admin' }
-                  ]}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>

@@ -6,32 +6,9 @@ const User = require('../models/User');
 const Maintenance = require('../models/Maintenance');
 const Notification = require('../models/Notification');
 const { createNotification } = require('./notification.controller');
+const { getVehicleForUser } = require('../utils/vehicleAccess');
 const fs = require('fs');
 const path = require('path');
-
-// Helper to check if user has access to a vehicle
-const checkVehicleAccess = async (vehicleId, user) => {
-  const vehicle = await Vehicle.findById(vehicleId);
-  if (!vehicle) {
-    throw new Error('Vehicle not found');
-  }
-
-  if (user.role === 'Manager') {
-    if (user.organization && vehicle.organization && vehicle.organization.toString() !== user.organization.toString()) {
-      throw new Error('Not authorized to access this vehicle');
-    }
-  } else if (user.role === 'Driver') {
-    if (vehicle.driver?.toString() !== user._id.toString()) {
-      throw new Error('Not authorized to access this vehicle');
-    }
-  } else if (user.role === 'Individual') {
-    if (vehicle.owner?.toString() !== user._id.toString()) {
-      throw new Error('Not authorized to access this vehicle');
-    }
-  }
-
-  return vehicle;
-};
 
 // @desc    Get fuel records for a vehicle (including basic analytics)
 // @route   GET /api/fuel/vehicle/:vehicleId
@@ -40,7 +17,7 @@ exports.getFuelRecordsByVehicle = async (req, res, next) => {
     let apiResponseModel = new ApiResponseModel();
 try {
     const { vehicleId } = req.params;
-    await checkVehicleAccess(vehicleId, req.user);
+    await getVehicleForUser(vehicleId, req.user);
 
     const mongoose = require('mongoose');
     const records = await FuelRecord.find({ vehicle: new mongoose.Types.ObjectId(vehicleId) })
@@ -85,7 +62,7 @@ try {
       throw new Error('Fuel record not found');
     }
 
-    await checkVehicleAccess(record.vehicle, req.user);
+    await getVehicleForUser(record.vehicle, req.user);
 
     apiResponseModel.status = true;
     apiResponseModel.msg = "Success";
@@ -110,7 +87,7 @@ try {
       throw new Error('Vehicle ID is required');
     }
 
-    const vehicleDoc = await checkVehicleAccess(vehicle, req.user);
+    const vehicleDoc = await getVehicleForUser(vehicle, req.user);
     
     // Automatically set driver to the currently logged in user if they are a Driver
     if (req.user.role === 'Driver') {
@@ -218,7 +195,7 @@ try {
       throw new Error('Fuel record not found');
     }
 
-    await checkVehicleAccess(record.vehicle, req.user);
+    await getVehicleForUser(record.vehicle, req.user);
 
     if (req.user.role === 'Driver') {
       res.status(403);
@@ -258,7 +235,7 @@ try {
       throw new Error('Fuel record not found');
     }
 
-    await checkVehicleAccess(record.vehicle, req.user);
+    await getVehicleForUser(record.vehicle, req.user);
 
     if (req.user.role === 'Driver') {
       res.status(403);

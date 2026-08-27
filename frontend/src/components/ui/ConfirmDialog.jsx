@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Box } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import Button from './Button';
 
 /**
@@ -8,7 +8,7 @@ import Button from './Button';
  */
 const ConfirmDialog = ({ open, title, content, onConfirm, onCancel, confirmText = 'Confirm', cancelText = 'Cancel', confirmColor = 'error', loading = false }) => {
   return (
-    <Dialog open={open} onClose={onCancel} slotProps={{ paper: { sx: { borderRadius: 2, p: 1, minWidth: 400 } } }}>
+    <Dialog open={open} onClose={onCancel} slotProps={{ paper: { sx: { borderRadius: 2, p: 1, width: 'calc(100% - 32px)', maxWidth: 440 } } }}>
       <DialogTitle sx={{ fontWeight: 'bold' }}>{title}</DialogTitle>
       <DialogContent>
         <DialogContentText>{content}</DialogContentText>

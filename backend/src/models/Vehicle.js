@@ -89,4 +89,7 @@ VehicleSchema.pre('validate', function(next) {
   }
 });
 
+VehicleSchema.index({ owner: 1 });
+VehicleSchema.index({ organization: 1 });
+
 module.exports = mongoose.model('Vehicle', VehicleSchema);

@@ -20,6 +20,11 @@ const UserSchema = new mongoose.Schema({
     enum: ['Admin', 'Individual', 'Manager', 'Driver'],
     default: 'Individual'
   },
+  adminRole: {
+    type: String,
+    enum: ['superAdmin', 'supportAdmin'],
+    default: 'supportAdmin'
+  },
   status: {
     type: String,
     enum: ['Active', 'Inactive'],

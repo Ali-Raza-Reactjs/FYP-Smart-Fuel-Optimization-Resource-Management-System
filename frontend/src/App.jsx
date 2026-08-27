@@ -83,6 +83,9 @@ function App() {
                   <Route path="/organizations/new" element={<OrganizationForm />} />
                   <Route path="/organizations/edit/:id" element={<OrganizationForm />} />
                   <Route path="/admin/users" element={<UserManagement />} />
+                  <Route element={<ProtectedRoute allowedRoles={['Admin']} allowedAdminRoles={['superAdmin']} />}>
+                    <Route path="/admin/admins" element={<UserManagement adminOnly />} />
+                  </Route>
                 </Route>
               </Route>
 
@@ -91,7 +94,17 @@ function App() {
               <Route path="/unauthorized" element={<Unauthorized />} />
             </Routes>
           </Router>
-          <ToastContainer position="top-right" autoClose={3000} />
+          <ToastContainer
+            position="top-right"
+            autoClose={3500}
+            newestOnTop
+            closeOnClick
+            pauseOnFocusLoss
+            pauseOnHover
+            draggable
+            theme="light"
+            limit={4}
+          />
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>

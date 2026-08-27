@@ -1,33 +1,6 @@
 const { ApiResponseModel } = require("../utils/classes");
 const Maintenance = require('../models/Maintenance');
-const Vehicle = require('../models/Vehicle');
-
-// Helper to check if user has access to a vehicle
-const checkVehicleAccess = async (vehicleId, user) => {
-  const vehicle = await Vehicle.findById(vehicleId);
-  if (!vehicle) {
-    throw new Error('Vehicle not found');
-  }
-
-  // Admin/Manager can see if it belongs to their org
-  if (user.role === 'Manager') {
-    if (user.organization && vehicle.organization && vehicle.organization.toString() !== user.organization.toString()) {
-      throw new Error('Not authorized to access this vehicle');
-    }
-  } 
-  // Driver can only see if assigned to them
-  else if (user.role === 'Driver') {
-    if (vehicle.driver?.toString() !== user._id.toString()) {
-      throw new Error('Not authorized to access this vehicle');
-    }
-  } else if (user.role === 'Individual') {
-    if (vehicle.owner?.toString() !== user._id.toString()) {
-      throw new Error('Not authorized to access this vehicle');
-    }
-  }
-
-  return vehicle;
-};
+const { getVehicleForUser } = require('../utils/vehicleAccess');
 
 // @desc    Get maintenance logs for a vehicle
 // @route   GET /api/maintenance/vehicle/:vehicleId
@@ -38,7 +11,7 @@ try {
     const { vehicleId } = req.params;
     
     // Check access
-    await checkVehicleAccess(vehicleId, req.user);
+    await getVehicleForUser(vehicleId, req.user);
 
     const logs = await Maintenance.find({ vehicle: vehicleId }).sort({ date: -1 });
     apiResponseModel.status = true;
@@ -64,7 +37,7 @@ try {
       throw new Error('Maintenance log not found');
     }
 
-    await checkVehicleAccess(log.vehicle, req.user);
+    await getVehicleForUser(log.vehicle, req.user);
 
     apiResponseModel.status = true;
     apiResponseModel.msg = "Success";
@@ -89,7 +62,7 @@ try {
       throw new Error('Vehicle ID is required');
     }
 
-    await checkVehicleAccess(vehicle, req.user);
+    await getVehicleForUser(vehicle, req.user);
 
     const log = await Maintenance.create(req.body);
     apiResponseModel.status = true;
@@ -115,7 +88,7 @@ try {
       throw new Error('Maintenance log not found');
     }
 
-    await checkVehicleAccess(log.vehicle, req.user);
+    await getVehicleForUser(log.vehicle, req.user);
 
     log = await Maintenance.findByIdAndUpdate(req.params.id, req.body, {
       returnDocument: 'after',
@@ -145,7 +118,7 @@ try {
       throw new Error('Maintenance log not found');
     }
 
-    await checkVehicleAccess(log.vehicle, req.user);
+    await getVehicleForUser(log.vehicle, req.user);
 
     await log.deleteOne();
 

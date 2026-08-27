@@ -23,12 +23,16 @@ const createFirstAdmin = async () => {
         email: adminEmail,
         password: process.env.ADMIN_PASSWORD || "Admin@123",
         role: "Admin",
+        adminRole: "superAdmin",
         status: "Active",
       });
 
       await admin.save();
       console.log("==> Initial Super Admin created successfully!");
       console.log(`    Email: ${adminEmail}`);
+    } else if (adminExists.role === "Admin" && adminExists.adminRole !== "superAdmin") {
+      adminExists.adminRole = "superAdmin";
+      await adminExists.save();
     }
   } catch (error) {
     console.error("Error seeding admin:", error.message);

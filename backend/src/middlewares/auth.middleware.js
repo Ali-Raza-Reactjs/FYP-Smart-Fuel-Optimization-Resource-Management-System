@@ -23,6 +23,11 @@ const protect = async (req, res, next) => {
         return next(new Error('Not authorized, user no longer exists'));
       }
 
+      if (req.user.status !== 'Active') {
+        res.status(401);
+        return next(new Error('Account is inactive'));
+      }
+
       next();
     } catch (error) {
       res.status(401);

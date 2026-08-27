@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   Box, Typography, Card, CardContent, Grid, IconButton, TableRow, TableCell,
   Avatar, Menu, MenuItem, ListItemIcon, ListItemText, Divider, Dialog,
-  DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, Select as MuiSelect,
+  DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, Select as MuiSelect, CircularProgress,
   useTheme
 } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
@@ -11,8 +11,10 @@ import PersonAddDisabledIcon from '@mui/icons-material/PersonAddDisabled';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloseIcon from '@mui/icons-material/Close';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 
 import userService from '../../services/user.service';
 import { toast } from 'react-toastify';
@@ -25,6 +27,7 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import StatusChip from '../../components/ui/StatusChip';
 import DataTable from '../../components/ui/DataTable';
 import EmptyState from '../../components/ui/EmptyState';
+import { AuthContext } from '../../context/AuthContext';
 
 // Mini KPI Card
 const StatCard = ({ title, value, icon, color }) => {
@@ -50,11 +53,13 @@ const StatCard = ({ title, value, icon, color }) => {
   );
 };
 
-const UserManagement = () => {
+const UserManagement = ({ adminOnly = false }) => {
   const theme = useTheme();
+  const { user: currentUser } = useContext(AuthContext);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const isSuperAdmin = currentUser?.role === 'Admin' && currentUser?.adminRole === 'superAdmin';
 
   // Edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -63,6 +68,7 @@ const UserManagement = () => {
     name: '',
     email: '',
     role: '',
+    adminRole: 'supportAdmin',
     status: '',
     phoneNumber: '',
     address: ''
@@ -71,6 +77,13 @@ const UserManagement = () => {
   // Action Menu state
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [viewUser, setViewUser] = useState(null);
+  const [viewLoading, setViewLoading] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createFormData, setCreateFormData] = useState({
+    name: '', email: '', password: '', adminRole: 'supportAdmin', contactNumber: ''
+  });
 
   // Confirmations
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -80,7 +93,7 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const data = await userService.getUsers();
+      const data = adminOnly ? await userService.getAdmins() : await userService.getUsers();
       setUsers(data);
     } catch (error) {
       toast.error('Failed to load users');
@@ -91,7 +104,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [adminOnly]);
 
   const handleOpenMenu = (event, user) => {
     setAnchorEl(event.currentTarget);
@@ -109,6 +122,7 @@ const UserManagement = () => {
       name: selectedUser.name || '',
       email: selectedUser.email || '',
       role: selectedUser.role || 'Individual',
+      adminRole: selectedUser.adminRole || 'supportAdmin',
       status: selectedUser.status || 'Active',
       phoneNumber: selectedUser.profile?.phoneNumber || '',
       address: selectedUser.profile?.address || ''
@@ -117,8 +131,45 @@ const UserManagement = () => {
     handleCloseMenu();
   };
 
+  const handleOpenViewDialog = async () => {
+    if (!selectedUser) return;
+    handleCloseMenu();
+    setViewDialogOpen(true);
+    setViewUser(selectedUser);
+    setViewLoading(true);
+    try {
+      const details = await userService.getUserById(selectedUser._id);
+      setViewUser(details);
+    } catch (error) {
+      toast.error('Failed to load user details');
+      setViewDialogOpen(false);
+    } finally {
+      setViewLoading(false);
+    }
+  };
+
   const handleEditChange = (e) => {
     setEditFormData({ ...editFormData, [e.target.name]: e.target.value });
+  };
+
+  const handleCreateChange = (e) => {
+    setCreateFormData({ ...createFormData, [e.target.name]: e.target.value });
+  };
+
+  const handleCreateAdmin = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const created = await userService.createAdmin(createFormData);
+      setUsers([created, ...users]);
+      setCreateDialogOpen(false);
+      setCreateFormData({ name: '', email: '', password: '', adminRole: 'supportAdmin', contactNumber: '' });
+      toast.success('Admin account created successfully');
+    } catch (error) {
+      toast.error(error.message || 'Failed to create admin account');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleUpdateUser = async (e) => {
@@ -129,6 +180,7 @@ const UserManagement = () => {
         name: editFormData.name,
         email: editFormData.email,
         role: editFormData.role,
+        ...(adminOnly ? { adminRole: editFormData.adminRole } : {}),
         status: editFormData.status,
         phoneNumber: editFormData.phoneNumber,
         address: editFormData.address
@@ -148,6 +200,7 @@ const UserManagement = () => {
 
   const handleDeleteUser = async () => {
     if (!selectedUser) return;
+    if (selectedUser.status !== 'Inactive' || String(selectedUser._id) === String(currentUser?._id)) return;
     setDeleting(true);
     try {
       await userService.deleteUser(selectedUser._id);
@@ -182,12 +235,14 @@ const UserManagement = () => {
   }
 
   // Filter users by search term
-  const filteredUsers = users.filter(u =>
-    (u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (u.role || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (u.profile?.phoneNumber || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter(u => {
+    const matchesSearch =
+      (u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.role || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.profile?.phoneNumber || '').toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch && (!adminOnly || u.role === 'Admin');
+  });
 
   // Statistics calculations
   const totalUsersCount = users.length;
@@ -197,19 +252,26 @@ const UserManagement = () => {
   return (
     <Box>
       <PageHeader
-        title="User Management"
-        subtitle="View details, edit roles, and delete inactive users from the system."
+        title={adminOnly ? 'Admin Management' : 'User Management'}
+        subtitle={adminOnly ? 'Create and manage administrator accounts.' : 'View details, edit roles, and delete inactive users from the system.'}
         action={
-          inactiveUsersCount > 0 && (
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<PersonAddDisabledIcon />}
-              onClick={() => setDeleteInactiveConfirmOpen(true)}
-            >
-              Delete Inactive ({inactiveUsersCount})
-            </Button>
-          )
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            {adminOnly && isSuperAdmin && (
+              <Button startIcon={<PersonAddIcon />} onClick={() => setCreateDialogOpen(true)}>
+                Create Admin
+              </Button>
+            )}
+            {!adminOnly && inactiveUsersCount > 0 && (
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<PersonAddDisabledIcon />}
+                onClick={() => setDeleteInactiveConfirmOpen(true)}
+              >
+                Delete Inactive ({inactiveUsersCount})
+              </Button>
+            )}
+          </Box>
         }
       />
 
@@ -252,7 +314,7 @@ const UserManagement = () => {
         ]}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        searchPlaceholder="Search by name, email, role, phone..."
+        searchPlaceholder={adminOnly ? 'Search by name, email, admin role...' : 'Search by name, email, role, phone...'}
       >
         {filteredUsers.length === 0 ? (
           <TableRow>
@@ -309,6 +371,71 @@ const UserManagement = () => {
         )}
       </DataTable>
 
+      {adminOnly && (
+        <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} fullWidth maxWidth="sm" slotProps={{ paper: { sx: { borderRadius: 2 } } }}>
+          <DialogTitle sx={{ fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Create Admin Account</span>
+            <IconButton onClick={() => setCreateDialogOpen(false)} size="small"><CloseIcon /></IconButton>
+          </DialogTitle>
+          <form onSubmit={handleCreateAdmin}>
+            <DialogContent dividers>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12 }}><TextField required name="name" label="Full Name" value={createFormData.name} onChange={handleCreateChange} /></Grid>
+                <Grid size={{ xs: 12 }}><TextField required type="email" name="email" label="Email Address" value={createFormData.email} onChange={handleCreateChange} /></Grid>
+                <Grid size={{ xs: 12, sm: 6 }}><TextField required type="password" name="password" label="Temporary Password" value={createFormData.password} onChange={handleCreateChange} /></Grid>
+                <Grid size={{ xs: 12, sm: 6 }}><Select name="adminRole" label="Admin Role" value={createFormData.adminRole} onChange={handleCreateChange} options={[{ value: 'supportAdmin', label: 'Support Admin' }, { value: 'superAdmin', label: 'Super Admin' }]} /></Grid>
+                <Grid size={{ xs: 12 }}><TextField name="contactNumber" label="Contact Number" value={createFormData.contactNumber} onChange={handleCreateChange} /></Grid>
+              </Grid>
+            </DialogContent>
+            <DialogActions sx={{ p: 2, gap: 1.5 }}>
+              <Button variant="outlined" color="inherit" onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+              <Button type="submit" loading={submitting}>Create Admin</Button>
+            </DialogActions>
+          </form>
+        </Dialog>
+      )}
+
+      <Dialog
+        open={viewDialogOpen}
+        onClose={() => setViewDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        slotProps={{ paper: { sx: { borderRadius: 2 } } }}
+      >
+        <DialogTitle sx={{ fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>User Details</span>
+          <IconButton onClick={() => setViewDialogOpen(false)} size="small"><CloseIcon /></IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          {viewLoading ? (
+            <Box sx={{ minHeight: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CircularProgress size={30} />
+            </Box>
+          ) : (
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+              <Box sx={{ gridColumn: { xs: 'auto', sm: '1 / -1' }, display: 'flex', alignItems: 'center', gap: 2, pb: 1 }}>
+                <Avatar sx={{ width: 52, height: 52, bgcolor: viewUser?.role === 'Admin' ? 'error.light' : 'primary.light', color: viewUser?.role === 'Admin' ? 'error.dark' : 'primary.dark' }}>
+                  {viewUser?.name?.charAt(0).toUpperCase() || 'U'}
+                </Avatar>
+                <Box>
+                  <Typography variant="h6">{viewUser?.name || 'Unknown user'}</Typography>
+                  <Typography variant="body2" color="text.secondary">{viewUser?.email || 'No email available'}</Typography>
+                </Box>
+              </Box>
+              <Box><Typography variant="caption" color="text.secondary">Role</Typography><Typography variant="body1" fontWeight={600}>{viewUser?.role || 'Not provided'}</Typography></Box>
+              <Box><Typography variant="caption" color="text.secondary">Status</Typography><Box><StatusChip status={viewUser?.status === 'Active' ? 'Active' : 'Inactive'} /></Box></Box>
+              <Box><Typography variant="caption" color="text.secondary">Contact Number</Typography><Typography variant="body1">{viewUser?.profile?.phoneNumber || 'Not provided'}</Typography></Box>
+              <Box><Typography variant="caption" color="text.secondary">Organization</Typography><Typography variant="body1">{viewUser?.organization?.name || viewUser?.organization || 'Not assigned'}</Typography></Box>
+              <Box sx={{ gridColumn: { xs: 'auto', sm: '1 / -1' } }}><Typography variant="caption" color="text.secondary">Address</Typography><Typography variant="body1">{viewUser?.profile?.address || 'Not provided'}</Typography></Box>
+              <Box><Typography variant="caption" color="text.secondary">Account Created</Typography><Typography variant="body1">{viewUser?.createdAt ? new Date(viewUser.createdAt).toLocaleDateString() : 'Not available'}</Typography></Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button variant="outlined" color="inherit" onClick={() => setViewDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Row Actions Menu */}
       <Menu
         anchorEl={anchorEl}
@@ -318,14 +445,20 @@ const UserManagement = () => {
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
-        <MenuItem onClick={handleOpenEditDialog}>
+        <MenuItem onClick={handleOpenViewDialog}>
+          <ListItemIcon><VisibilityIcon fontSize="small" color="primary" /></ListItemIcon>
+          <ListItemText>View Details</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleOpenEditDialog} disabled={selectedUser?.role === 'Admin' && !isSuperAdmin}>
           <ListItemIcon><EditIcon fontSize="small" color="primary" /></ListItemIcon>
           <ListItemText>Edit Info</ListItemText>
         </MenuItem>
-        <MenuItem onClick={() => setDeleteConfirmOpen(true)} sx={{ color: 'error.main' }}>
-          <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
-          <ListItemText>Delete User</ListItemText>
-        </MenuItem>
+        {selectedUser?.status === 'Inactive' && String(selectedUser?._id) !== String(currentUser?._id) && !(selectedUser?.role === 'Admin' && !isSuperAdmin) && (
+          <MenuItem onClick={() => setDeleteConfirmOpen(true)} sx={{ color: 'error.main' }}>
+            <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
+            <ListItemText>Delete Inactive </ListItemText>
+          </MenuItem>
+        )}
       </Menu>
 
       {/* Edit User Modal */}
@@ -354,6 +487,8 @@ const UserManagement = () => {
                   label="Email Address"
                   value={editFormData.email}
                   onChange={handleEditChange}
+                  InputProps={{ readOnly: true }}
+                  sx={{ '& .MuiInputBase-input': { cursor: 'not-allowed' } }}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -366,6 +501,21 @@ const UserManagement = () => {
                   options={['Admin', 'Individual', 'Manager', 'Driver']}
                 />
               </Grid>
+              {adminOnly && (
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Select
+                    required
+                    name="adminRole"
+                    label="Admin Role"
+                    value={editFormData.adminRole}
+                    onChange={handleEditChange}
+                    options={[
+                      { value: 'supportAdmin', label: 'Support Admin' },
+                      { value: 'superAdmin', label: 'Super Admin' }
+                    ]}
+                  />
+                </Grid>
+              )}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Select
                   required

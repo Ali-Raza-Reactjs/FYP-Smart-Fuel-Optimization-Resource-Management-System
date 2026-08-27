@@ -3,7 +3,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { CircularProgress, Box } from '@mui/material';
 
-const ProtectedRoute = ({ allowedRoles }) => {
+const ProtectedRoute = ({ allowedRoles, allowedAdminRoles }) => {
   const { user, loading } = useContext(AuthContext);
 
   if (loading) {
@@ -19,6 +19,10 @@ const ProtectedRoute = ({ allowedRoles }) => {
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  if (allowedAdminRoles && (!allowedAdminRoles.includes(user.adminRole) || user.role !== 'Admin')) {
     return <Navigate to="/unauthorized" replace />;
   }
 

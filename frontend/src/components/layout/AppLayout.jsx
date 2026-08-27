@@ -26,7 +26,7 @@ const AppLayout = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: theme.palette.background.default }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: theme.palette.background.default, overflowX: 'hidden' }}>
       <Sidebar mobileOpen={mobileOpen} handleDrawerToggle={handleDrawerToggle} />
       
       <Box 
@@ -36,17 +36,19 @@ const AppLayout = () => {
           display: 'flex', 
           flexDirection: 'column', 
           minWidth: 0,
-          width: { md: `calc(100% - 260px)` } // matches sidebar width
+          width: { md: `calc(100% - 260px)` },
         }}
       >
         <Header handleDrawerToggle={handleDrawerToggle} />
         
         <Box sx={{ 
-          p: { xs: 2, sm: 3, md: 4 }, 
+          p: { xs: 2, sm: 3, md: 4 },
+          pt: { xs: 2.5, sm: 3.5, md: 4 },
           flexGrow: 1, 
           maxWidth: '1280px', 
           width: '100%', 
-          mx: 'auto' 
+          mx: 'auto',
+          overflow: 'hidden'
         }}>
           <Outlet />
         </Box>

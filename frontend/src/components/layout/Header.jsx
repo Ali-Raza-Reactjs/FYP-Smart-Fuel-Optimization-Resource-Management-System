@@ -7,6 +7,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import notificationService from '../../services/notification.service';
 import { toast } from 'react-toastify';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 const Header = ({ handleDrawerToggle }) => {
   const theme = useTheme();
@@ -17,6 +18,7 @@ const Header = ({ handleDrawerToggle }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [notifAnchorEl, setNotifAnchorEl] = useState(null);
   const [notifications, setNotifications] = useState([]);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   // Fetch notifications
   useEffect(() => {
@@ -57,6 +59,11 @@ const Header = ({ handleDrawerToggle }) => {
 
   const handleLogout = () => {
     setAnchorEl(null);
+    setLogoutDialogOpen(true);
+  };
+
+  const confirmLogout = () => {
+    setLogoutDialogOpen(false);
     logout();
     navigate('/login');
   };
@@ -83,13 +90,15 @@ const Header = ({ handleDrawerToggle }) => {
       position="sticky"
       elevation={0}
       sx={{
-        backgroundColor: '#FFFFFF',
+        backgroundColor: 'rgba(255, 255, 255, 0.94)',
+        backdropFilter: 'blur(12px)',
+        borderRadius: 0,
         borderBottom: `1px solid ${theme.palette.divider}`,
         color: theme.palette.text.primary,
         zIndex: theme.zIndex.drawer + 1,
       }}
     >
-      <Toolbar sx={{ justifyContent: 'space-between', minHeight: '64px !important', px: { xs: 2, md: 4 } }}>
+      <Toolbar sx={{ justifyContent: 'space-between', minHeight: '68px !important', px: { xs: 1.5, sm: 2.5, md: 4 } }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <IconButton
             color="inherit"
@@ -193,7 +202,7 @@ const Header = ({ handleDrawerToggle }) => {
               ml: 1,
               p: 0.5,
               pr: 1.5,
-              borderRadius: 8,
+              borderRadius: 2.5,
               cursor: 'pointer',
               border: `1px solid ${theme.palette.divider}`,
               '&:hover': { backgroundColor: theme.palette.action.hover }
@@ -231,6 +240,14 @@ const Header = ({ handleDrawerToggle }) => {
           </Menu>
         </Box>
       </Toolbar>
+      <ConfirmDialog
+        open={logoutDialogOpen}
+        title="Sign out?"
+        content="Are you sure you want to sign out of your account?"
+        confirmText="Sign out"
+        onConfirm={confirmLogout}
+        onCancel={() => setLogoutDialogOpen(false)}
+      />
     </AppBar>
   );
 };

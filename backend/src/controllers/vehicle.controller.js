@@ -114,8 +114,11 @@ try {
       req.body.organization = req.user.organization;
     }
 
-    // Set owner to creator if not specified
-    req.body.owner = req.body.owner || req.user._id;
+    if (req.user.role === 'Individual') {
+      req.body.owner = req.user._id;
+    } else {
+      req.body.owner = req.body.owner || req.user._id;
+    }
 
     const vehicle = await Vehicle.create(req.body);
     apiResponseModel.status = true;
@@ -149,6 +152,13 @@ try {
     if (req.user.role === 'Individual' && vehicle.owner?.toString() !== req.user._id.toString()) {
       res.status(403);
       throw new Error('Not authorized to update this vehicle');
+    }
+
+    if (req.user.role === 'Individual') {
+      delete req.body.owner;
+      delete req.body.organization;
+      delete req.body.driver;
+      delete req.body.status;
     }
 
     // Security: Ensure Manager can only modify vehicles within their own organization

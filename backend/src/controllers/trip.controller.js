@@ -2,28 +2,7 @@ const { ApiResponseModel } = require("../utils/classes");
 const Trip = require('../models/Trip');
 const Vehicle = require('../models/Vehicle');
 const Organization = require('../models/Organization');
-
-// Helper to check access
-const checkVehicleAccess = async (vehicleId, user) => {
-  const vehicle = await Vehicle.findById(vehicleId);
-  if (!vehicle) {
-    throw new Error('Vehicle not found');
-  }
-  if (user.role === 'Manager') {
-    if (user.organization && vehicle.organization && vehicle.organization.toString() !== user.organization.toString()) {
-      throw new Error('Not authorized to access this vehicle');
-    }
-  } else if (user.role === 'Driver') {
-    if (vehicle.driver?.toString() !== user._id.toString()) {
-      throw new Error('Not authorized to access this vehicle');
-    }
-  } else if (user.role === 'Individual') {
-    if (vehicle.owner?.toString() !== user._id.toString()) {
-      throw new Error('Not authorized to access this vehicle');
-    }
-  }
-  return vehicle;
-};
+const { getVehicleForUser } = require('../utils/vehicleAccess');
 
 // @desc    Get all trips
 // @route   GET /api/trips
@@ -81,7 +60,7 @@ try {
       throw new Error('Trip not found');
     }
 
-    await checkVehicleAccess(trip.vehicle._id, req.user);
+    await getVehicleForUser(trip.vehicle._id, req.user);
 
     apiResponseModel.status = true;
     apiResponseModel.msg = "Success";
@@ -106,7 +85,7 @@ try {
       throw new Error('Vehicle ID is required');
     }
 
-    const vehicleDoc = await checkVehicleAccess(vehicle, req.user);
+    const vehicleDoc = await getVehicleForUser(vehicle, req.user);
     
     // Assign driver
     if (req.user.role === 'Driver') {
@@ -216,7 +195,7 @@ try {
       throw new Error('Trip not found');
     }
 
-    await checkVehicleAccess(trip.vehicle, req.user);
+    await getVehicleForUser(trip.vehicle, req.user);
 
     // Drivers can only update the status of their trips
     if (req.user.role === 'Driver') {
@@ -258,7 +237,7 @@ try {
       throw new Error('Trip not found');
     }
 
-    await checkVehicleAccess(trip.vehicle, req.user);
+    await getVehicleForUser(trip.vehicle, req.user);
 
     if (req.user.role === 'Driver') {
       res.status(403);

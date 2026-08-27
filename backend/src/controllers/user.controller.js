@@ -1,5 +1,69 @@
 const { ApiResponseModel } = require("../utils/classes");
 const User = require('../models/User');
+const { isSuperAdmin } = require('../utils/adminAccess');
+
+const adminProjection = 'name email role adminRole status organization profile createdAt';
+
+exports.getAdmins = async (req, res, next) => {
+    let apiResponseModel = new ApiResponseModel();
+try {
+    const admins = await User.find({ role: 'Admin' }).select(adminProjection).populate('organization', 'name');
+    const data = admins.map(admin => {
+      const adminData = admin.toObject();
+      if (isSuperAdmin(admin)) adminData.adminRole = 'superAdmin';
+      return adminData;
+    });
+    apiResponseModel.status = true;
+    apiResponseModel.msg = 'Success';
+    apiResponseModel.data = data;
+    return res.status(200).json(apiResponseModel);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.createAdmin = async (req, res, next) => {
+    let apiResponseModel = new ApiResponseModel();
+try {
+    const { name, email, password, adminRole = 'supportAdmin', contactNumber } = req.body;
+    const normalizedEmail = email ? email.toLowerCase().trim() : '';
+
+    if (!name || !normalizedEmail || !password) {
+      res.status(400);
+      throw new Error('Name, email, and password are required');
+    }
+
+    const userExists = await User.findOne({ email: normalizedEmail });
+    if (userExists) {
+      res.status(400);
+      throw new Error('User already exists');
+    }
+
+    const admin = await User.create({
+      name,
+      email: normalizedEmail,
+      password,
+      role: 'Admin',
+      adminRole,
+      profile: { phoneNumber: contactNumber || '', address: '' }
+    });
+
+    apiResponseModel.status = true;
+    apiResponseModel.msg = 'Success';
+    apiResponseModel.data = {
+      _id: admin._id,
+      name: admin.name,
+      email: admin.email,
+      role: admin.role,
+      adminRole: admin.adminRole,
+      status: admin.status,
+      profile: admin.profile
+    };
+    return res.status(201).json(apiResponseModel);
+  } catch (error) {
+    next(error);
+  }
+};
 
 // @desc    Get user profile
 // @route   GET /api/users/profile
@@ -17,6 +81,7 @@ try {
         name: user.name,
         email: user.email,
         role: user.role,
+        adminRole: user.role === 'Admin' && isSuperAdmin(user) ? 'superAdmin' : user.adminRole,
         profile: user.profile
       };
       return res.status(200).json(apiResponseModel);
@@ -84,9 +149,14 @@ exports.getUsers = async (req, res, next) => {
     let apiResponseModel = new ApiResponseModel();
 try {
     const users = await User.find({}).select('-password');
+    const data = users.map(user => {
+      const userData = user.toObject();
+      if (isSuperAdmin(user)) userData.adminRole = 'superAdmin';
+      return userData;
+    });
     apiResponseModel.status = true;
     apiResponseModel.msg = "Success";
-    apiResponseModel.data = users;
+    apiResponseModel.data = data;
     return res.status(200).json(apiResponseModel);
   } catch (error) {
     next(error);
@@ -126,10 +196,29 @@ try {
       throw new Error('User not found');
     }
 
+    const nextRole = req.body.role || user.role;
+    const nextStatus = req.body.status || user.status;
+    if (user.role === 'Admin' && user.status === 'Active' && (nextRole !== 'Admin' || nextStatus !== 'Active')) {
+      const activeAdminCount = await User.countDocuments({ role: 'Admin', status: 'Active' });
+      if (activeAdminCount <= 1) {
+        res.status(400);
+        throw new Error('At least one active Admin must remain in the system');
+      }
+    }
+
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
     user.role = req.body.role || user.role;
     user.status = req.body.status || user.status;
+
+    if (user.role === 'Admin' && !isSuperAdmin(req.user)) {
+      res.status(403);
+      throw new Error('Only a Super Admin can manage administrator accounts');
+    }
+
+    if (user.role === 'Admin' && req.body.adminRole) {
+      user.adminRole = req.body.adminRole;
+    }
 
     if (req.body.profile) {
       user.profile = { ...user.profile, ...req.body.profile };
@@ -149,6 +238,7 @@ try {
       name: updatedUser.name,
       email: updatedUser.email,
       role: updatedUser.role,
+      adminRole: updatedUser.role === 'Admin' && isSuperAdmin(updatedUser) ? 'superAdmin' : updatedUser.adminRole,
       status: updatedUser.status,
       profile: updatedUser.profile
     };
@@ -170,6 +260,21 @@ try {
       throw new Error('User not found');
     }
 
+    if (user._id.toString() === req.user._id.toString()) {
+      res.status(400);
+      throw new Error('You cannot delete your own account');
+    }
+
+    if (user.role === 'Admin' && !isSuperAdmin(req.user)) {
+      res.status(403);
+      throw new Error('Only a Super Admin can manage administrator accounts');
+    }
+
+    if (user.status !== 'Inactive') {
+      res.status(400);
+      throw new Error('Only inactive users can be deleted');
+    }
+
     await user.deleteOne();
     apiResponseModel.status = true;
     apiResponseModel.msg = "Success";
@@ -186,7 +291,10 @@ try {
 exports.deleteInactiveUsers = async (req, res, next) => {
     let apiResponseModel = new ApiResponseModel();
 try {
-    const result = await User.deleteMany({ status: 'Inactive' });
+    const query = isSuperAdmin(req.user)
+      ? { status: 'Inactive' }
+      : { status: 'Inactive', role: { $ne: 'Admin' } };
+    const result = await User.deleteMany(query);
     apiResponseModel.status = true;
     apiResponseModel.msg = "Success";
     apiResponseModel.data = { success: true, message: `${result.deletedCount} inactive users deleted` };

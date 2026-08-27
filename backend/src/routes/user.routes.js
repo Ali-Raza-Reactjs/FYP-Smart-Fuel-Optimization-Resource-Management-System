@@ -3,12 +3,15 @@ const {
   getUserProfile, 
   updateUserProfile,
   getUsers,
+  getAdmins,
+  createAdmin,
   getUserById,
   updateUser,
   deleteUser,
   deleteInactiveUsers
 } = require('../controllers/user.controller');
 const { protect, authorize } = require('../middlewares/auth.middleware');
+const { superAdminOnly } = require('../utils/adminAccess');
 
 const router = express.Router();
 
@@ -19,6 +22,10 @@ router.route('/profile')
 // Admin User Management routes
 router.route('/')
   .get(protect, authorize('Admin'), getUsers);
+
+router.route('/admins')
+  .get(protect, authorize('Admin'), superAdminOnly, getAdmins)
+  .post(protect, authorize('Admin'), superAdminOnly, createAdmin);
 
 router.route('/inactive')
   .delete(protect, authorize('Admin'), deleteInactiveUsers);
