@@ -2,30 +2,10 @@ const { ApiResponseModel } = require("../utils/classes");
 const User = require('../models/User');
 const { isSuperAdmin } = require('../utils/adminAccess');
 
-const adminProjection = 'name email role adminRole status organization profile createdAt';
-
-exports.getAdmins = async (req, res, next) => {
-    let apiResponseModel = new ApiResponseModel();
-try {
-    const admins = await User.find({ role: 'Admin' }).select(adminProjection).populate('organization', 'name');
-    const data = admins.map(admin => {
-      const adminData = admin.toObject();
-      if (isSuperAdmin(admin)) adminData.adminRole = 'superAdmin';
-      return adminData;
-    });
-    apiResponseModel.status = true;
-    apiResponseModel.msg = 'Success';
-    apiResponseModel.data = data;
-    return res.status(200).json(apiResponseModel);
-  } catch (error) {
-    next(error);
-  }
-};
-
 exports.createAdmin = async (req, res, next) => {
     let apiResponseModel = new ApiResponseModel();
 try {
-    const { name, email, password, adminRole = 'supportAdmin', contactNumber } = req.body;
+    const { name, email, password, contactNumber } = req.body;
     const normalizedEmail = email ? email.toLowerCase().trim() : '';
 
     if (!name || !normalizedEmail || !password) {
@@ -44,7 +24,7 @@ try {
       email: normalizedEmail,
       password,
       role: 'Admin',
-      adminRole,
+      adminRole: 'supportAdmin',
       profile: { phoneNumber: contactNumber || '', address: '' }
     });
 
@@ -148,7 +128,20 @@ try {
 exports.getUsers = async (req, res, next) => {
     let apiResponseModel = new ApiResponseModel();
 try {
-    const users = await User.find({}).select('-password');
+    const rawRoles = req.query.role ?? req.query['role[]'];
+    const requestedRoles = Array.isArray(rawRoles)
+      ? rawRoles
+      : rawRoles ? [rawRoles] : ['Individual'];
+    const query = requestedRoles.includes('Admin')
+      ? {
+        $or: [
+          { role: { $in: requestedRoles.filter(role => role !== 'Admin') } },
+          { role: 'Admin', adminRole: 'supportAdmin' }
+        ]
+      }
+      : { role: { $in: requestedRoles } };
+
+  const users = await User.find(query).select('-password');
     const data = users.map(user => {
       const userData = user.toObject();
       if (isSuperAdmin(user)) userData.adminRole = 'superAdmin';
@@ -217,6 +210,11 @@ try {
     }
 
     if (user.role === 'Admin' && req.body.adminRole) {
+      const configuredAdminEmail = process.env.ADMIN_EMAIL?.toLowerCase().trim();
+      if (req.body.adminRole === 'superAdmin' && user.email?.toLowerCase() !== configuredAdminEmail) {
+        res.status(400);
+        throw new Error('Only the primary Admin can have the Super Admin role');
+      }
       user.adminRole = req.body.adminRole;
     }
 
@@ -228,6 +226,9 @@ try {
     }
     if (req.body.address) {
       user.profile.address = req.body.address;
+    }
+    if (req.body.password) {
+      user.password = req.body.password;
     }
 
     const updatedUser = await user.save();

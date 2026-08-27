@@ -52,10 +52,6 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     { text: 'User Management', icon: <PeopleIcon fontSize="small" />, path: '/admin/users', roles: ['Admin'] },
   ];
 
-  const adminManagementItems = [
-    { text: 'Admin Management', icon: <PeopleIcon fontSize="small" />, path: '/admin/admins', roles: ['Admin'] },
-  ];
-
   const renderListItems = (items) => (
     items.filter(item => item.roles.includes(user.role)).map((item) => {
       const active = isActive(item.path);
@@ -159,11 +155,6 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
             <List sx={{ pt: 0 }}>
               {renderListItems(adminItems)}
             </List>
-            {user.adminRole === 'superAdmin' && (
-              <List sx={{ pt: 0 }}>
-                {renderListItems(adminManagementItems)}
-              </List>
-            )}
           </>
         )}
       </Box>

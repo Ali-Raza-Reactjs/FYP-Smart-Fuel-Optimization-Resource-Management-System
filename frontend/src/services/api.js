@@ -37,4 +37,33 @@ api.interceptors.response.use(
   },
 );
 
+// De-duplicate identical GET requests that are already in-flight (e.g. two
+// mount effects firing back-to-back under React.StrictMode in dev, or a
+// re-render kicking off the same fetch again before the first one settles).
+// Concurrent callers for the same URL/params share one network request and
+// all resolve with the same response; a call made after the previous one
+// has settled still triggers a fresh request as normal.
+const pendingGetRequests = new Map();
+const originalGet = api.get.bind(api);
+
+api.get = (url, config) => {
+  let key;
+  try {
+    key = `${url}::${JSON.stringify(config?.params || {})}`;
+  } catch {
+    key = url;
+  }
+
+  if (pendingGetRequests.has(key)) {
+    return pendingGetRequests.get(key);
+  }
+
+  const request = originalGet(url, config).finally(() => {
+    pendingGetRequests.delete(key);
+  });
+
+  pendingGetRequests.set(key, request);
+  return request;
+};
+
 export default api;

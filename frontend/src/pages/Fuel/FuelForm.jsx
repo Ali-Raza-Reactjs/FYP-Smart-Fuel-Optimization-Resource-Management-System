@@ -50,7 +50,7 @@ const FuelForm = () => {
     if (isEditMode) {
       fetchRecord();
     }
-  }, [id, isEditMode, navigate, user, vehicleId]);
+  }, [id, isEditMode, navigate, user?.role, vehicleId]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });

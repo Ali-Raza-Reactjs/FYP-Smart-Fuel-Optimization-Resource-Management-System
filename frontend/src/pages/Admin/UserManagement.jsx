@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import {
   Box, Typography, Card, CardContent, Grid, IconButton, TableRow, TableCell,
   Avatar, Menu, MenuItem, ListItemIcon, ListItemText, Divider, Dialog,
-  DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, Select as MuiSelect, CircularProgress,
+  DialogTitle, DialogContent, DialogActions, CircularProgress, Tabs, Tab,
   useTheme
 } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
@@ -53,25 +53,71 @@ const StatCard = ({ title, value, icon, color }) => {
   );
 };
 
-const UserManagement = ({ adminOnly = false }) => {
+// Shared field set for both Add Admin and Edit Admin dialogs
+const AdminAccountFields = ({ formData, onChange, isEditMode = false }) => (
+  <Grid container spacing={2}>
+    <Grid size={{ xs: 12 }}>
+      <TextField required name="name" label="Full Name" value={formData.name} onChange={onChange} />
+    </Grid>
+    <Grid size={{ xs: 12 }}>
+      <TextField required type="email" name="email" label="Email Address" value={formData.email} onChange={onChange} />
+    </Grid>
+    <Grid size={{ xs: 12 }}>
+      <TextField name="contactNumber" label="Contact Number" value={formData.contactNumber} onChange={onChange} />
+    </Grid>
+    <Grid size={{ xs: 12, sm: 6 }}>
+      <TextField
+        required={!isEditMode}
+        type="password"
+        name="password"
+        label={isEditMode ? 'New Password (optional)' : 'Password'}
+        value={formData.password}
+        onChange={onChange}
+      />
+    </Grid>
+    <Grid size={{ xs: 12, sm: 6 }}>
+      <TextField
+        required={!isEditMode || Boolean(formData.password)}
+        type="password"
+        name="confirmPassword"
+        label="Confirm Password"
+        value={formData.confirmPassword}
+        onChange={onChange}
+      />
+    </Grid>
+  </Grid>
+);
+
+const UserManagement = () => {
   const theme = useTheme();
   const { user: currentUser } = useContext(AuthContext);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const isSuperAdmin = currentUser?.role === 'Admin' && currentUser?.adminRole === 'superAdmin';
+  const [activeTab, setActiveTab] = useState(0);
 
-  // Edit dialog state
+  // Edit dialog state (Individual users)
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({
     _id: '',
     name: '',
     email: '',
     role: '',
-    adminRole: 'supportAdmin',
     status: '',
     phoneNumber: '',
     address: ''
+  });
+
+  // Edit dialog state (Admin accounts - handled separately from Individuals)
+  const [editAdminDialogOpen, setEditAdminDialogOpen] = useState(false);
+  const [editAdminFormData, setEditAdminFormData] = useState({
+    _id: '',
+    name: '',
+    email: '',
+    contactNumber: '',
+    password: '',
+    confirmPassword: ''
   });
 
   // Action Menu state
@@ -82,7 +128,7 @@ const UserManagement = ({ adminOnly = false }) => {
   const [viewLoading, setViewLoading] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createFormData, setCreateFormData] = useState({
-    name: '', email: '', password: '', adminRole: 'supportAdmin', contactNumber: ''
+    name: '', email: '', contactNumber: '', password: '', confirmPassword: ''
   });
 
   // Confirmations
@@ -91,9 +137,10 @@ const UserManagement = ({ adminOnly = false }) => {
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (tabIndex = activeTab) => {
+    setLoading(true);
     try {
-      const data = adminOnly ? await userService.getAdmins() : await userService.getUsers();
+      const data = await userService.getUsers({ role: tabIndex === 0 ? ['Individual'] : ['Admin'] });
       setUsers(data);
     } catch (error) {
       toast.error('Failed to load users');
@@ -103,8 +150,13 @@ const UserManagement = ({ adminOnly = false }) => {
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, [adminOnly]);
+    fetchUsers(0);
+  }, []);
+
+  const handleTabChange = (_, value) => {
+    setActiveTab(value);
+    fetchUsers(value);
+  };
 
   const handleOpenMenu = (event, user) => {
     setAnchorEl(event.currentTarget);
@@ -115,14 +167,27 @@ const UserManagement = ({ adminOnly = false }) => {
     setAnchorEl(null);
   };
 
+  // Admin accounts are edited via a separate dialog/flow from Individuals
   const handleOpenEditDialog = () => {
     if (!selectedUser) return;
+    if (selectedUser.role === 'Admin') {
+      setEditAdminFormData({
+        _id: selectedUser._id,
+        name: selectedUser.name || '',
+        email: selectedUser.email || '',
+        contactNumber: selectedUser.profile?.phoneNumber || '',
+        password: '',
+        confirmPassword: ''
+      });
+      setEditAdminDialogOpen(true);
+      handleCloseMenu();
+      return;
+    }
     setEditFormData({
       _id: selectedUser._id,
       name: selectedUser.name || '',
       email: selectedUser.email || '',
       role: selectedUser.role || 'Individual',
-      adminRole: selectedUser.adminRole || 'supportAdmin',
       status: selectedUser.status || 'Active',
       phoneNumber: selectedUser.profile?.phoneNumber || '',
       address: selectedUser.profile?.address || ''
@@ -156,17 +221,63 @@ const UserManagement = ({ adminOnly = false }) => {
     setCreateFormData({ ...createFormData, [e.target.name]: e.target.value });
   };
 
+  const handleEditAdminChange = (e) => {
+    setEditAdminFormData({ ...editAdminFormData, [e.target.name]: e.target.value });
+  };
+
+  // Shared by Add Admin and Edit Admin: confirmPassword only guards input, never sent to the API
+  const passwordsMatch = (password, confirmPassword) => {
+    if (password && password !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return false;
+    }
+    return true;
+  };
+
   const handleCreateAdmin = async (e) => {
     e.preventDefault();
+    if (!passwordsMatch(createFormData.password, createFormData.confirmPassword)) return;
     setSubmitting(true);
     try {
-      const created = await userService.createAdmin(createFormData);
+      const payload = {
+        name: createFormData.name,
+        email: createFormData.email,
+        contactNumber: createFormData.contactNumber,
+        password: createFormData.password
+      };
+      const created = await userService.createAdmin(payload);
       setUsers([created, ...users]);
       setCreateDialogOpen(false);
-      setCreateFormData({ name: '', email: '', password: '', adminRole: 'supportAdmin', contactNumber: '' });
+      setCreateFormData({ name: '', email: '', contactNumber: '', password: '', confirmPassword: '' });
       toast.success('Admin account created successfully');
     } catch (error) {
       toast.error(error.message || 'Failed to create admin account');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUpdateAdmin = async (e) => {
+    e.preventDefault();
+    if (!passwordsMatch(editAdminFormData.password, editAdminFormData.confirmPassword)) return;
+    setSubmitting(true);
+    try {
+      const payload = {
+        name: editAdminFormData.name,
+        email: editAdminFormData.email,
+        phoneNumber: editAdminFormData.contactNumber
+      };
+      if (editAdminFormData.password) {
+        payload.password = editAdminFormData.password;
+      }
+
+      const updated = await userService.updateUser(editAdminFormData._id, payload);
+      toast.success('Admin updated successfully');
+      setUsers(users.map(u => u._id === updated._id ? { ...u, ...updated } : u));
+      setEditAdminDialogOpen(false);
+    } catch (error) {
+      const message = error.message || error.response?.data?.message || 'Update failed';
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -180,7 +291,6 @@ const UserManagement = ({ adminOnly = false }) => {
         name: editFormData.name,
         email: editFormData.email,
         role: editFormData.role,
-        ...(adminOnly ? { adminRole: editFormData.adminRole } : {}),
         status: editFormData.status,
         phoneNumber: editFormData.phoneNumber,
         address: editFormData.address
@@ -241,7 +351,7 @@ const UserManagement = ({ adminOnly = false }) => {
       (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (u.role || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (u.profile?.phoneNumber || '').toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch && (!adminOnly || u.role === 'Admin');
+    return matchesSearch;
   });
 
   // Statistics calculations
@@ -252,16 +362,16 @@ const UserManagement = ({ adminOnly = false }) => {
   return (
     <Box>
       <PageHeader
-        title={adminOnly ? 'Admin Management' : 'User Management'}
-        subtitle={adminOnly ? 'Create and manage administrator accounts.' : 'View details, edit roles, and delete inactive users from the system.'}
+        title="User Management"
+        subtitle={activeTab === 1 ? 'View administrator accounts and access levels.' : 'View details and manage individual user accounts.'}
         action={
           <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            {adminOnly && isSuperAdmin && (
+            {activeTab === 1 && isSuperAdmin && (
               <Button startIcon={<PersonAddIcon />} onClick={() => setCreateDialogOpen(true)}>
                 Create Admin
               </Button>
             )}
-            {!adminOnly && inactiveUsersCount > 0 && (
+            {activeTab === 0 && inactiveUsersCount > 0 && (
               <Button
                 variant="outlined"
                 color="error"
@@ -274,6 +384,16 @@ const UserManagement = ({ adminOnly = false }) => {
           </Box>
         }
       />
+
+      <Tabs
+        value={activeTab}
+        onChange={handleTabChange}
+        sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}
+        aria-label="User management sections"
+      >
+        <Tab label="Individuals" />
+        <Tab label="Admins" />
+      </Tabs>
 
       {/* KPI Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -314,7 +434,7 @@ const UserManagement = ({ adminOnly = false }) => {
         ]}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        searchPlaceholder={adminOnly ? 'Search by name, email, admin role...' : 'Search by name, email, role, phone...'}
+        searchPlaceholder="Search by name, email, role, phone..."
       >
         {filteredUsers.length === 0 ? (
           <TableRow>
@@ -371,7 +491,7 @@ const UserManagement = ({ adminOnly = false }) => {
         )}
       </DataTable>
 
-      {adminOnly && (
+      {activeTab === 1 && isSuperAdmin && (
         <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} fullWidth maxWidth="sm" slotProps={{ paper: { sx: { borderRadius: 2 } } }}>
           <DialogTitle sx={{ fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>Create Admin Account</span>
@@ -379,13 +499,7 @@ const UserManagement = ({ adminOnly = false }) => {
           </DialogTitle>
           <form onSubmit={handleCreateAdmin}>
             <DialogContent dividers>
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 12 }}><TextField required name="name" label="Full Name" value={createFormData.name} onChange={handleCreateChange} /></Grid>
-                <Grid size={{ xs: 12 }}><TextField required type="email" name="email" label="Email Address" value={createFormData.email} onChange={handleCreateChange} /></Grid>
-                <Grid size={{ xs: 12, sm: 6 }}><TextField required type="password" name="password" label="Temporary Password" value={createFormData.password} onChange={handleCreateChange} /></Grid>
-                <Grid size={{ xs: 12, sm: 6 }}><Select name="adminRole" label="Admin Role" value={createFormData.adminRole} onChange={handleCreateChange} options={[{ value: 'supportAdmin', label: 'Support Admin' }, { value: 'superAdmin', label: 'Super Admin' }]} /></Grid>
-                <Grid size={{ xs: 12 }}><TextField name="contactNumber" label="Contact Number" value={createFormData.contactNumber} onChange={handleCreateChange} /></Grid>
-              </Grid>
+              <AdminAccountFields formData={createFormData} onChange={handleCreateChange} />
             </DialogContent>
             <DialogActions sx={{ p: 2, gap: 1.5 }}>
               <Button variant="outlined" color="inherit" onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
@@ -394,6 +508,23 @@ const UserManagement = ({ adminOnly = false }) => {
           </form>
         </Dialog>
       )}
+
+      {/* Edit Admin Modal - kept separate from the Individual user Edit modal */}
+      <Dialog open={editAdminDialogOpen} onClose={() => setEditAdminDialogOpen(false)} fullWidth maxWidth="sm" slotProps={{ paper: { sx: { borderRadius: 2 } } }}>
+        <DialogTitle sx={{ fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Edit Admin Account</span>
+          <IconButton onClick={() => setEditAdminDialogOpen(false)} size="small"><CloseIcon /></IconButton>
+        </DialogTitle>
+        <form onSubmit={handleUpdateAdmin}>
+          <DialogContent dividers>
+            <AdminAccountFields formData={editAdminFormData} onChange={handleEditAdminChange} isEditMode />
+          </DialogContent>
+          <DialogActions sx={{ p: 2, gap: 1.5 }}>
+            <Button variant="outlined" color="inherit" onClick={() => setEditAdminDialogOpen(false)}>Cancel</Button>
+            <Button type="submit" loading={submitting}>Save Changes</Button>
+          </DialogActions>
+        </form>
+      </Dialog>
 
       <Dialog
         open={viewDialogOpen}
@@ -449,10 +580,12 @@ const UserManagement = ({ adminOnly = false }) => {
           <ListItemIcon><VisibilityIcon fontSize="small" color="primary" /></ListItemIcon>
           <ListItemText>View Details</ListItemText>
         </MenuItem>
-        <MenuItem onClick={handleOpenEditDialog} disabled={selectedUser?.role === 'Admin' && !isSuperAdmin}>
-          <ListItemIcon><EditIcon fontSize="small" color="primary" /></ListItemIcon>
-          <ListItemText>Edit Info</ListItemText>
-        </MenuItem>
+        {(selectedUser?.role !== 'Admin' || isSuperAdmin) && (
+          <MenuItem onClick={handleOpenEditDialog}>
+            <ListItemIcon><EditIcon fontSize="small" color="primary" /></ListItemIcon>
+            <ListItemText>{selectedUser?.role === 'Admin' ? 'Edit Admin Info' : 'Edit Info'}</ListItemText>
+          </MenuItem>
+        )}
         {selectedUser?.status === 'Inactive' && String(selectedUser?._id) !== String(currentUser?._id) && !(selectedUser?.role === 'Admin' && !isSuperAdmin) && (
           <MenuItem onClick={() => setDeleteConfirmOpen(true)} sx={{ color: 'error.main' }}>
             <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
@@ -501,21 +634,6 @@ const UserManagement = ({ adminOnly = false }) => {
                   options={['Admin', 'Individual', 'Manager', 'Driver']}
                 />
               </Grid>
-              {adminOnly && (
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Select
-                    required
-                    name="adminRole"
-                    label="Admin Role"
-                    value={editFormData.adminRole}
-                    onChange={handleEditChange}
-                    options={[
-                      { value: 'supportAdmin', label: 'Support Admin' },
-                      { value: 'superAdmin', label: 'Super Admin' }
-                    ]}
-                  />
-                </Grid>
-              )}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Select
                   required

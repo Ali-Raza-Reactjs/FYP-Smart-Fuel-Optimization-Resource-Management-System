@@ -70,7 +70,7 @@ const VehicleForm = () => {
     };
 
     fetchData();
-  }, [id, isEditMode, navigate, user]);
+  }, [id, isEditMode, navigate, user?.role]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });

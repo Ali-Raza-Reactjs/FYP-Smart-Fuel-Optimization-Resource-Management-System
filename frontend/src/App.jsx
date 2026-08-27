@@ -83,9 +83,6 @@ function App() {
                   <Route path="/organizations/new" element={<OrganizationForm />} />
                   <Route path="/organizations/edit/:id" element={<OrganizationForm />} />
                   <Route path="/admin/users" element={<UserManagement />} />
-                  <Route element={<ProtectedRoute allowedRoles={['Admin']} allowedAdminRoles={['superAdmin']} />}>
-                    <Route path="/admin/admins" element={<UserManagement adminOnly />} />
-                  </Route>
                 </Route>
               </Route>
 

@@ -3,7 +3,6 @@ const {
   getUserProfile, 
   updateUserProfile,
   getUsers,
-  getAdmins,
   createAdmin,
   getUserById,
   updateUser,
@@ -24,7 +23,6 @@ router.route('/')
   .get(protect, authorize('Admin'), getUsers);
 
 router.route('/admins')
-  .get(protect, authorize('Admin'), superAdminOnly, getAdmins)
   .post(protect, authorize('Admin'), superAdminOnly, createAdmin);
 
 router.route('/inactive')
