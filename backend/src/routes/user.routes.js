@@ -12,17 +12,19 @@ const { protect, authorize } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
+// Specific literal routes (must come BEFORE parameterized routes in Express)
 router.route('/profile')
   .get(protect, getUserProfile)
   .put(protect, updateUserProfile);
 
-// Admin User Management routes
-router.route('/')
-  .get(protect, authorize('Admin'), getUsers);
-
 router.route('/inactive')
   .delete(protect, authorize('Admin'), deleteInactiveUsers);
 
+// Root route
+router.route('/')
+  .get(protect, authorize('Admin'), getUsers);
+
+// Parameterized routes (must come LAST)
 router.route('/:id')
   .get(protect, authorize('Admin'), getUserById)
   .put(protect, authorize('Admin'), updateUser)

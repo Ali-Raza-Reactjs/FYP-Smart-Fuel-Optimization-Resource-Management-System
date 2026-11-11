@@ -5,7 +5,8 @@
   "scripts": {
     "start": "nodemon server.js",
     "server": "nodemon server.js",
-    "test": "cross-env NODE_ENV=test jest --detectOpenHandles --forceExit"
+    "test": "cross-env NODE_ENV=test jest --detectOpenHandles --forceExit",
+    "restore-db": "mongorestore --db smart_fuel_optimization_prod ../database/smart_fuel_optimization_prod"
   },
   "keywords": [],
   "author": "",

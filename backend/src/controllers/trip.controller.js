@@ -2,6 +2,7 @@ const { ApiResponseModel } = require("../utils/classes");
 const Trip = require('../models/Trip');
 const Vehicle = require('../models/Vehicle');
 const Organization = require('../models/Organization');
+const { createNotification } = require('./notification.controller');
 
 // Helper to check access
 const checkVehicleAccess = async (vehicleId, user) => {
@@ -168,7 +169,7 @@ try {
     const responseObj = trip.toObject();
 
     // Crisis mode check
-    const org = await Organization.findById(vehicleDoc.organization);
+    const org = vehicleDoc.organization ? await Organization.findById(vehicleDoc.organization) : null;
     if (org && org.crisisMode && req.body.endLocation && req.body.startTime) {
       const tripStartTime = new Date(req.body.startTime);
       const threeDaysLater = new Date(tripStartTime.getTime() + (3 * 24 * 60 * 60 * 1000));
@@ -188,7 +189,30 @@ try {
       });
 
       if (overlapping) {
-        responseObj.suggestion = 'Combine trips! Another trip to this destination is scheduled within 3 days.';
+        responseObj.suggestion = 'Crisis Mode Alert: Another trip to this destination is scheduled within 3 days. Consider combining trips to conserve fuel!';
+        await createNotification(req.user._id, 'Crisis Mode Recommendation', responseObj.suggestion, 'Alert');
+      }
+    } else if (req.user.role === 'Individual' && req.body.endLocation && req.body.startTime) {
+      const tripStartTime = new Date(req.body.startTime);
+      const threeDaysLater = new Date(tripStartTime.getTime() + (3 * 24 * 60 * 60 * 1000));
+      const threeDaysBefore = new Date(tripStartTime.getTime() - (3 * 24 * 60 * 60 * 1000));
+      
+      const vehicles = await Vehicle.find({ owner: req.user._id }).select('_id');
+      const vehicleIds = vehicles.map(v => v._id);
+
+      const overlapping = await Trip.findOne({
+        _id: { $ne: trip._id },
+        vehicle: { $in: vehicleIds },
+        endLocation: req.body.endLocation,
+        startTime: {
+          $gte: threeDaysBefore,
+          $lte: threeDaysLater
+        }
+      });
+
+      if (overlapping) {
+        responseObj.suggestion = 'Trip Optimization Notice: Another trip to this destination is scheduled within 3 days. Consider combining trips to conserve fuel!';
+        await createNotification(req.user._id, 'Trip Optimization Notice', responseObj.suggestion, 'Info');
       }
     }
 

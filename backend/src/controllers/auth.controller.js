@@ -165,3 +165,41 @@ exports.logout = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Reset password (Forgot Password)
+// @route   POST /api/auth/reset-password
+// @access  Public
+exports.resetPassword = async (req, res, next) => {
+  let apiResponseModel = new ApiResponseModel();
+  try {
+    const { email, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+      res.status(400);
+      throw new Error("Please provide your email and new password");
+    }
+
+    if (newPassword.length < 6) {
+      res.status(400);
+      throw new Error("New password must be at least 6 characters");
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      res.status(404);
+      throw new Error("No account found with this email address");
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    apiResponseModel.status = true;
+    apiResponseModel.msg = "Password reset successfully. You can now log in with your new password.";
+    apiResponseModel.data = { success: true };
+    return res.status(200).json(apiResponseModel);
+  } catch (error) {
+    next(error);
+  }
+};

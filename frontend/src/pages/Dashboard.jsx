@@ -90,7 +90,7 @@ const Dashboard = () => {
     fetchStats();
   }, []);
 
-  const isAdminOrManager = user?.role === 'Admin' || user?.role === 'Manager';
+  const isOverviewUser = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Individual';
 
   const renderSkeletons = () => (
     <Grid container spacing={2}>
@@ -117,9 +117,9 @@ const Dashboard = () => {
       </Box>
 
       {loading || !stats ? renderSkeletons() : (
-        isAdminOrManager ? (
-          // Admin / Manager View
-          stats.hasOrganization === false ? (
+        isOverviewUser ? (
+          // Admin / Manager / Individual View
+          stats.hasOrganization === false && user?.role === 'Manager' ? (
             <Box sx={{ mt: 4 }}>
               <Card elevation={0} sx={{ p: 4, borderRadius: 2 }}>
                 <EmptyState
@@ -146,12 +146,21 @@ const Dashboard = () => {
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                  <StatCard
-                    title="Total Drivers"
-                    value={stats?.totalDrivers || 0}
-                    icon={<PersonIcon />}
-                    color={theme.palette.secondary.main}
-                  />
+                  {user?.role === 'Individual' ? (
+                    <StatCard
+                      title="Total Vehicles"
+                      value={stats?.totalVehicles || 0}
+                      icon={<DirectionsCarIcon />}
+                      color={theme.palette.secondary.main}
+                    />
+                  ) : (
+                    <StatCard
+                      title="Total Drivers"
+                      value={stats?.totalDrivers || 0}
+                      icon={<PersonIcon />}
+                      color={theme.palette.secondary.main}
+                    />
+                  )}
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <StatCard
