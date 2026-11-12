@@ -11,9 +11,8 @@ const { protect, authorize } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
-// Only Admin and Manager can access budgets
 router.use(protect);
-router.use(authorize('Admin', 'Manager'));
+router.use(authorize('Admin', 'Manager', 'Individual'));
 
 router.route('/')
   .get(getBudgets)

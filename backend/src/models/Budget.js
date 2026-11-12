@@ -4,7 +4,12 @@ const BudgetSchema = new mongoose.Schema({
   organization: {
     type: mongoose.Schema.ObjectId,
     ref: 'Organization',
-    required: true
+    required: false
+  },
+  owner: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
+    required: false
   },
   month: {
     type: Number,
@@ -34,7 +39,22 @@ const BudgetSchema = new mongoose.Schema({
   }
 });
 
-// Ensure only one budget per organization per month/year
-BudgetSchema.index({ organization: 1, month: 1, year: 1 }, { unique: true });
+BudgetSchema.pre('validate', function (next) {
+  if (!this.organization && !this.owner) {
+    this.invalidate('owner', 'Budget must belong to an organization or a user');
+  }
+  if (typeof next === 'function') {
+    next();
+  }
+});
+
+BudgetSchema.index(
+  { organization: 1, month: 1, year: 1 },
+  { unique: true, sparse: true }
+);
+BudgetSchema.index(
+  { owner: 1, month: 1, year: 1 },
+  { unique: true, sparse: true }
+);
 
 module.exports = mongoose.model('Budget', BudgetSchema);

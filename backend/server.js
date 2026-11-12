@@ -33,14 +33,16 @@ app.use(
 // Security: Helmet sets secure HTTP headers
 app.use(
   helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        connectSrc: ["'self'", "https://nominatim.openstreetmap.org"],
+        connectSrc: ["'self'", "https://nominatim.openstreetmap.org", "http://localhost:5000"],
         imgSrc: [
           "'self'",
           "data:",
           "blob:",
+          "http://localhost:5000",
           "https://*.tile.openstreetmap.org",
           "https://unpkg.com",
         ],
@@ -142,7 +144,7 @@ app.use(require("./src/middlewares/error.middleware"));
 
 const PORT = process.env.PORT || 5000;
 
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {
   app.listen(PORT, () => {
     console.log(
       `Server running in ${process.env.NODE_ENV || "development"} mode on port ${PORT}`,

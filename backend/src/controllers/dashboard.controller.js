@@ -4,10 +4,10 @@ const Vehicle = require('../models/Vehicle');
 const Trip = require('../models/Trip');
 const FuelRecord = require('../models/FuelRecord');
 const Maintenance = require('../models/Maintenance');
+const Organization = require('../models/Organization');
+const Budget = require('../models/Budget');
+const mongoose = require('mongoose');
 
-// @desc    Get dashboard statistics
-// @route   GET /api/dashboard
-// @access  Private
 exports.getDashboardStats = async (req, res, next) => {
     let apiResponseModel = new ApiResponseModel();
 try {
@@ -15,23 +15,15 @@ try {
     let data = {};
 
     if (role === 'Admin' || role === 'Manager' || role === 'Individual') {
-      let vehicleIds = [];
-      let totalVehicles = 0;
-      let activeVehicles = 0;
+      let vehicles = [];
       let totalDrivers = 0;
+      let crisisMode = false;
 
       if (role === 'Admin') {
-        const vehicles = await Vehicle.find().select('_id status');
-        vehicleIds = vehicles.map(v => v._id);
-        totalVehicles = vehicles.length;
-        activeVehicles = vehicles.filter(v => v.status === 'Active').length;
+        vehicles = await Vehicle.find().select('_id status make model licensePlate vehicleName');
         totalDrivers = await User.countDocuments({ role: 'Driver' });
       } else if (role === 'Individual') {
-        const vehicles = await Vehicle.find({ owner: _id }).select('_id status');
-        vehicleIds = vehicles.map(v => v._id);
-        totalVehicles = vehicles.length;
-        activeVehicles = vehicles.filter(v => v.status === 'Active').length;
-        totalDrivers = 0;
+        vehicles = await Vehicle.find({ owner: _id }).select('_id status make model licensePlate vehicleName');
       } else if (role === 'Manager') {
         if (!organization) {
           apiResponseModel.status = true;
@@ -43,75 +35,142 @@ try {
             totalDrivers: 0,
             activeTrips: 0,
             currentMonthSpend: 0,
-            historicalSpend: []
+            historicalSpend: [],
+            perVehicle: [],
+            currentBudget: null,
+            crisisMode: false
           };
           return res.status(200).json(apiResponseModel);
         }
-        const vehicles = await Vehicle.find({ organization }).select('_id status');
-        vehicleIds = vehicles.map(v => v._id);
-        totalVehicles = vehicles.length;
-        activeVehicles = vehicles.filter(v => v.status === 'Active').length;
+        vehicles = await Vehicle.find({ organization }).select('_id status make model licensePlate vehicleName');
         totalDrivers = await User.countDocuments({ organization, role: 'Driver' });
+        const org = await Organization.findById(organization).select('crisisMode');
+        crisisMode = Boolean(org?.crisisMode);
       }
 
-      // 3. Get active trips
+      if (role === 'Admin' && organization) {
+        const org = await Organization.findById(organization).select('crisisMode');
+        crisisMode = Boolean(org?.crisisMode);
+      }
+
+      let vehicleIds = vehicles.map(v => v._id);
+      if (req.query.vehicleId && mongoose.Types.ObjectId.isValid(req.query.vehicleId)) {
+        const allowed = vehicleIds.some(id => id.toString() === req.query.vehicleId);
+        if (allowed) {
+          vehicleIds = [new mongoose.Types.ObjectId(req.query.vehicleId)];
+        }
+      }
+
+      const totalVehicles = vehicles.length;
+      const activeVehicles = vehicles.filter(v => v.status === 'Active').length;
       const activeTrips = await Trip.countDocuments({ vehicle: { $in: vehicleIds }, status: 'In Transit' });
 
-      // 4. Get Current Spend (Fuel + Maintenance) within date range
       const now = new Date();
-      
       let startDate = new Date(now.getFullYear(), now.getMonth(), 1);
       let endDate = now;
 
       if (req.query.startDate && req.query.endDate) {
         startDate = new Date(req.query.startDate);
         endDate = new Date(req.query.endDate);
-        // Include the entire end day
         endDate.setHours(23, 59, 59, 999);
       }
-      
+
       const fuelAgg = await FuelRecord.aggregate([
         { $match: { vehicle: { $in: vehicleIds }, date: { $gte: startDate, $lte: endDate } } },
-        { $group: { _id: null, total: { $sum: '$cost' } } }
+        { $group: { _id: null, total: { $sum: '$cost' }, liters: { $sum: '$liters' } } }
       ]);
       const currentMonthFuel = fuelAgg.length > 0 ? fuelAgg[0].total : 0;
+      const currentMonthLiters = fuelAgg.length > 0 ? fuelAgg[0].liters : 0;
 
       const maintAgg = await Maintenance.aggregate([
         { $match: { vehicle: { $in: vehicleIds }, date: { $gte: startDate, $lte: endDate } } },
         { $group: { _id: null, total: { $sum: '$cost' } } }
       ]);
       const currentMonthMaint = maintAgg.length > 0 ? maintAgg[0].total : 0;
-
       const currentMonthSpend = currentMonthFuel + currentMonthMaint;
 
-      // 5. Historical Spend Data (Last 6 Months) for Charts
-      let historicalSpend = [];
+      const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+      const [fuelHist, maintHist, perVehicleAgg] = await Promise.all([
+        FuelRecord.aggregate([
+          { $match: { vehicle: { $in: vehicleIds }, date: { $gte: sixMonthsAgo } } },
+          { $group: {
+            _id: { y: { $year: '$date' }, m: { $month: '$date' } },
+            fuel: { $sum: '$cost' },
+            fuelLiters: { $sum: '$liters' }
+          } }
+        ]),
+        Maintenance.aggregate([
+          { $match: { vehicle: { $in: vehicleIds }, date: { $gte: sixMonthsAgo } } },
+          { $group: {
+            _id: { y: { $year: '$date' }, m: { $month: '$date' } },
+            maintenance: { $sum: '$cost' }
+          } }
+        ]),
+        FuelRecord.aggregate([
+          { $match: { vehicle: { $in: vehicleIds }, date: { $gte: startDate, $lte: endDate } } },
+          { $group: {
+            _id: '$vehicle',
+            cost: { $sum: '$cost' },
+            liters: { $sum: '$liters' }
+          } }
+        ])
+      ]);
+
+      const fuelMap = new Map(fuelHist.map(row => [`${row._id.y}-${row._id.m}`, row]));
+      const maintMap = new Map(maintHist.map(row => [`${row._id.y}-${row._id.m}`, row]));
+      const historicalSpend = [];
       for (let i = 5; i >= 0; i--) {
         const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-        
-        const fAgg = await FuelRecord.aggregate([
-          { $match: { vehicle: { $in: vehicleIds }, date: { $gte: start, $lt: end } } },
-          { $group: { _id: null, total: { $sum: '$cost' } } }
-        ]);
-        const mAgg = await Maintenance.aggregate([
-          { $match: { vehicle: { $in: vehicleIds }, date: { $gte: start, $lt: end } } },
-          { $group: { _id: null, total: { $sum: '$cost' } } }
-        ]);
-        
+        const key = `${start.getFullYear()}-${start.getMonth() + 1}`;
         const monthName = start.toLocaleString('default', { month: 'short' });
         historicalSpend.push({
           name: monthName,
-          fuel: fAgg.length > 0 ? fAgg[0].total : 0,
-          maintenance: mAgg.length > 0 ? mAgg[0].total : 0
+          fuel: fuelMap.get(key)?.fuel || 0,
+          fuelLiters: fuelMap.get(key)?.fuelLiters || 0,
+          maintenance: maintMap.get(key)?.maintenance || 0
         });
       }
 
-      // 6. Get Latest Planned Trip
+      const vehicleLabel = (id) => {
+        const v = vehicles.find(item => item._id.toString() === id.toString());
+        if (!v) return 'Unknown';
+        return v.licensePlate || v.vehicleName || `${v.make || ''} ${v.model || ''}`.trim() || 'Vehicle';
+      };
+
+      const perVehicle = perVehicleAgg.map(row => ({
+        name: vehicleLabel(row._id),
+        cost: row.cost,
+        liters: row.liters
+      }));
+
       const latestTrip = await Trip.findOne({ vehicle: { $in: vehicleIds }, status: 'Scheduled' })
         .sort({ createdAt: -1 })
         .populate('driver', 'name')
         .populate('vehicle', 'licensePlate make model');
+
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
+      let budgetFilter = null;
+      if (role === 'Individual') {
+        budgetFilter = { owner: _id, month, year };
+      } else if (organization) {
+        budgetFilter = { organization, month, year };
+      } else if (role === 'Admin') {
+        budgetFilter = { organization: { $exists: true, $ne: null }, month, year };
+      }
+
+      let currentBudget = null;
+      if (budgetFilter) {
+        const budget = await Budget.findOne(budgetFilter);
+        if (budget) {
+          currentBudget = {
+            totalLimit: budget.totalLimit,
+            alertThreshold: budget.alertThreshold,
+            actualSpend: currentMonthSpend,
+            percentUsed: budget.totalLimit ? (currentMonthSpend / budget.totalLimit) * 100 : 0
+          };
+        }
+      }
 
       data = {
         totalVehicles,
@@ -119,21 +178,23 @@ try {
         totalDrivers,
         activeTrips,
         currentMonthSpend,
+        currentMonthLiters,
         historicalSpend,
-        latestTrip
+        perVehicle,
+        latestTrip,
+        currentBudget,
+        crisisMode,
+        vehicles: vehicles.map(v => ({
+          _id: v._id,
+          label: v.licensePlate || v.vehicleName || `${v.make || ''} ${v.model || ''}`.trim()
+        }))
       };
 
     } else if (role === 'Driver') {
-      // Logic for Driver Dashboard
-      // 1. Assigned Vehicle
       const assignedVehicle = await Vehicle.findOne({ driver: _id }).select('make model licensePlate');
-
-      // 2. Upcoming / Active Trips
       const trips = await Trip.find({ driver: _id, status: { $in: ['Scheduled', 'In Transit'] } }).sort('startTime').limit(5);
 
-      // 3. Fuel Logged this month
       const now = new Date();
-      
       let startDate = new Date(now.getFullYear(), now.getMonth(), 1);
       let endDate = now;
 
@@ -142,12 +203,12 @@ try {
         endDate = new Date(req.query.endDate);
         endDate.setHours(23, 59, 59, 999);
       }
-      
+
       const fuelAgg = await FuelRecord.aggregate([
         { $match: { driver: _id, date: { $gte: startDate, $lte: endDate } } },
         { $group: { _id: null, totalLiters: { $sum: '$liters' }, totalCost: { $sum: '$cost' } } }
       ]);
-      
+
       const monthlyFuel = fuelAgg.length > 0 ? fuelAgg[0] : { totalLiters: 0, totalCost: 0 };
 
       data = {

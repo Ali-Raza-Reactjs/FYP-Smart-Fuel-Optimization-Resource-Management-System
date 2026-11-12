@@ -22,7 +22,7 @@ router.route('/')
 
 router.route('/:id')
   .get(getFuelRecord)
-  .put(authorize('Admin', 'Manager'), upload.single('receiptImage'), updateFuelRecord)
-  .delete(authorize('Admin', 'Manager'), deleteFuelRecord);
+  .put(authorize('Admin', 'Manager', 'Individual'), upload.single('receiptImage'), updateFuelRecord)
+  .delete(authorize('Admin', 'Manager', 'Individual'), deleteFuelRecord);
 
 module.exports = router;

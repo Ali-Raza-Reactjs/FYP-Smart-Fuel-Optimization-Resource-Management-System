@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Container, Box, Typography, Paper, Grid, CircularProgress } from '@mui/material';
+import { Container, Box, Typography, Paper, Grid, CircularProgress, FormControlLabel, Checkbox, Chip } from '@mui/material';
 import Button from '../../components/ui/Button';
 import TextField from '../../components/ui/TextField';
 import Select from '../../components/ui/Select';
@@ -31,9 +31,11 @@ const TripForm = () => {
     estimatedFuel: '',
     estimatedDuration: '',
     routeGeometry: '',
-    status: 'Scheduled'
+    status: 'Scheduled',
+    isEssential: true
   });
   const [vehicles, setVehicles] = useState([]);
+  const [routeOptions, setRouteOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [calculatingRoute, setCalculatingRoute] = useState(false);
 
@@ -57,7 +59,8 @@ const TripForm = () => {
             estimatedFuel: trip.estimatedFuel,
             estimatedDuration: trip.estimatedDuration || '',
             routeGeometry: trip.routeGeometry || '',
-            status: trip.status
+            status: trip.status,
+            isEssential: trip.isEssential !== false
           });
         }
       } catch (error) {
@@ -101,17 +104,20 @@ const TripForm = () => {
         throw new Error(response?.msg || 'Failed to calculate route.');
       }
 
-      const { distance, estimatedDuration, estimatedFuel, geometry } = response.data;
+      const { distance, estimatedDuration, estimatedFuel, geometry, routes } = response.data;
+      const options = Array.isArray(routes) && routes.length > 0 ? routes : [{ distance, estimatedDuration, estimatedFuel, geometry, isRecommended: true }];
 
+      setRouteOptions(options);
+      const recommended = options.find((route) => route.isRecommended) || options[0];
       setFormData(prev => ({
         ...prev,
-        distance,
-        estimatedDuration,
-        estimatedFuel,
-        routeGeometry: geometry
+        distance: recommended.distance,
+        estimatedDuration: recommended.estimatedDuration,
+        estimatedFuel: recommended.estimatedFuel,
+        routeGeometry: recommended.geometry
       }));
 
-      toast.success('Route optimized successfully!');
+      toast.success(options.length > 1 ? 'Select the most fuel-efficient route below.' : 'Route optimized successfully!');
     } catch (error) {
       toast.error(error.message || 'Failed to calculate route.');
     } finally {
@@ -131,10 +137,16 @@ const TripForm = () => {
         await tripService.updateTrip(id, formData);
         toast.success('Trip updated successfully');
       } else {
+        if (!formData.isEssential) {
+          toast.warn('This trip is marked non-essential. Avoid non-essential travel during shortages.', { autoClose: 6000 });
+        }
         const result = await tripService.createTrip(formData);
         toast.success('Trip scheduled successfully');
         if (result?.suggestion) {
           toast.warn(result.suggestion, { autoClose: 8000 });
+        }
+        if (result?.inefficientRoute) {
+          toast.warn(result.inefficientRoute, { autoClose: 8000 });
         }
       }
       navigate('/trips');
@@ -251,7 +263,54 @@ const TripForm = () => {
                     options={['Scheduled', 'In Transit', 'Completed', 'Cancelled']}
                   />
                 </Grid>
+                <Grid size={{ xs: 12, md: 3 }} sx={{ display: 'flex', alignItems: 'center' }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={Boolean(formData.isEssential)}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, isEssential: e.target.checked }))}
+                      />
+                    }
+                    label="Essential trip"
+                  />
+                </Grid>
               </Grid>
+              {routeOptions.length > 1 && (
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                    Suggested routes (lowest fuel first)
+                  </Typography>
+                  <Grid container spacing={1}>
+                    {routeOptions.map((route, index) => (
+                      <Grid size={{ xs: 12, sm: 6, md: 4 }} key={`${route.distance}-${index}`}>
+                        <Paper
+                          variant="outlined"
+                          onClick={() => setFormData((prev) => ({
+                            ...prev,
+                            distance: route.distance,
+                            estimatedDuration: route.estimatedDuration,
+                            estimatedFuel: route.estimatedFuel,
+                            routeGeometry: route.geometry
+                          }))}
+                          sx={{
+                            p: 2,
+                            cursor: 'pointer',
+                            borderColor: formData.routeGeometry === route.geometry ? 'primary.main' : 'divider',
+                            bgcolor: formData.routeGeometry === route.geometry ? 'action.selected' : 'background.paper'
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                            <Typography fontWeight={600}>Option {index + 1}</Typography>
+                            {route.isRecommended && <Chip size="small" color="success" label="Best fuel" />}
+                          </Box>
+                          <Typography variant="body2">{route.distance} km · {route.estimatedDuration} min</Typography>
+                          <Typography variant="body2" fontWeight={600}>{route.estimatedFuel} L</Typography>
+                        </Paper>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Box>
+              )}
               <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
                 <Button variant="outlined" color="inherit" onClick={() => navigate('/trips')}>
                   Cancel

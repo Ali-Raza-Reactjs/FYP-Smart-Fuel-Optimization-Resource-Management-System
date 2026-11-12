@@ -1,5 +1,6 @@
 const { ApiResponseModel } = require("../utils/classes");
 const Vehicle = require('../models/Vehicle');
+const { mapOsrmRoutes, pickRoute } = require('../utils/fuelEstimate');
 
 // @desc    Get optimized route details (distance, duration, fuel, geometry)
 // @route   POST /api/routes/optimize
@@ -19,22 +20,16 @@ try {
       throw new Error('Please provide a vehicle ID to calculate fuel consumption');
     }
 
-    // 1. Fetch vehicle to get fuel efficiency
     const vehicle = await Vehicle.findById(vehicleId);
     if (!vehicle) {
       res.status(404);
       throw new Error('Vehicle not found');
     }
 
-    // Default to 8 L/100km if not set on older vehicle records
-    const efficiency = vehicle.fuelEfficiency || 8;
+    const osrmUrl = `http://router.project-osrm.org/route/v1/driving/${startCoordinates.lng},${startCoordinates.lat};${endCoordinates.lng},${endCoordinates.lat}?overview=full&geometries=geojson&alternatives=true`;
 
-    // 2. Call OSRM Public API
-    // Format: /route/v1/driving/{longitude},{latitude};{longitude},{latitude}
-    const osrmUrl = `http://router.project-osrm.org/route/v1/driving/${startCoordinates.lng},${startCoordinates.lat};${endCoordinates.lng},${endCoordinates.lat}?overview=full&geometries=geojson`;
-    
     const response = await fetch(osrmUrl);
-    
+
     if (!response.ok) {
       throw new Error('Failed to fetch route from routing service');
     }
@@ -46,22 +41,22 @@ try {
       throw new Error('Could not calculate a route between these points');
     }
 
-    const route = data.routes[0];
-    
-    // Distance comes in meters, duration in seconds
-    const distanceKm = route.distance / 1000;
-    const durationMinutes = route.duration / 60;
+    const routes = mapOsrmRoutes(data.routes, vehicle.fuelEfficiency);
+    const recommended = pickRoute(routes);
 
-    // 3. Calculate Fuel
-    const estimatedFuel = (distanceKm * efficiency) / 100;
+    if (!recommended) {
+      res.status(400);
+      throw new Error('Vehicle fuel efficiency must be greater than 0 km/liter');
+    }
 
     apiResponseModel.status = true;
     apiResponseModel.msg = "Success";
     apiResponseModel.data = {
-      distance: Number(distanceKm.toFixed(2)),
-      estimatedDuration: Math.round(durationMinutes),
-      estimatedFuel: Number(estimatedFuel.toFixed(2)),
-      geometry: JSON.stringify(route.geometry)
+      distance: recommended.distance,
+      estimatedDuration: recommended.estimatedDuration,
+      estimatedFuel: recommended.estimatedFuel,
+      geometry: recommended.geometry,
+      routes
     };
     return res.status(200).json(apiResponseModel);
   } catch (error) {

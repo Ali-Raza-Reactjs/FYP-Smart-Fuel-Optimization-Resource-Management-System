@@ -63,6 +63,10 @@ function App() {
                 <Route element={<ProtectedRoute allowedRoles={['Admin', 'Manager', 'Individual']} />}>
                   <Route path="/vehicles/new" element={<VehicleForm />} />
                   <Route path="/vehicles/edit/:id" element={<VehicleForm />} />
+                  <Route path="/vehicles/:vehicleId/fuel/edit/:id" element={<FuelForm />} />
+                  <Route path="/budgets" element={<BudgetList />} />
+                  <Route path="/budgets/new" element={<BudgetForm />} />
+                  <Route path="/budgets/edit/:id" element={<BudgetForm />} />
                 </Route>
 
                 {/* Protected Routes - Admin & Manager only */}
@@ -70,10 +74,6 @@ function App() {
                   <Route path="/vehicles/:vehicleId/maintenance" element={<MaintenanceList />} />
                   <Route path="/vehicles/:vehicleId/maintenance/new" element={<MaintenanceForm />} />
                   <Route path="/vehicles/:vehicleId/maintenance/edit/:id" element={<MaintenanceForm />} />
-                  <Route path="/vehicles/:vehicleId/fuel/edit/:id" element={<FuelForm />} />
-                  <Route path="/budgets" element={<BudgetList />} />
-                  <Route path="/budgets/new" element={<BudgetForm />} />
-                  <Route path="/budgets/edit/:id" element={<BudgetForm />} />
                   <Route path="/reports" element={<Reports />} />
                 </Route>
 

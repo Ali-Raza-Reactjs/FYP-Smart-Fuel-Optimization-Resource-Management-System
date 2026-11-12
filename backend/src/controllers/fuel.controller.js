@@ -115,30 +115,35 @@ try {
       const month = recordDate.getMonth() + 1;
       const year = recordDate.getFullYear();
 
-      const budget = await Budget.findOne({
-        organization: vehicleDoc.organization,
-        month,
-        year
-      });
+      const budget = await Budget.findOne(
+        vehicleDoc.organization
+          ? { organization: vehicleDoc.organization, month, year }
+          : { owner: vehicleDoc.owner, month, year }
+      );
 
       if (budget) {
+        const rangeStart = new Date(year, month - 1, 1);
+        const rangeEnd = new Date(year, month, 1);
+        const vehicleFilter = vehicleDoc.organization
+          ? { organization: vehicleDoc.organization }
+          : { owner: vehicleDoc.owner };
+        const scopedVehicles = await Vehicle.find(vehicleFilter).select('_id');
+        const scopedIds = scopedVehicles.map(v => v._id);
+
         const FuelAgg = await FuelRecord.aggregate([
-          { $match: { date: { $gte: new Date(year, month - 1, 1), $lt: new Date(year, month, 1) } } },
-          { $lookup: { from: 'vehicles', localField: 'vehicle', foreignField: '_id', as: 'v' } },
-          { $unwind: '$v' },
-          { $match: { 'v.organization': vehicleDoc.organization } },
+          { $match: { vehicle: { $in: scopedIds }, date: { $gte: rangeStart, $lt: rangeEnd } } },
           { $group: { _id: null, total: { $sum: '$cost' } } }
         ]);
         const fuelTotal = FuelAgg.length > 0 ? FuelAgg[0].total : 0;
 
-        const MaintAgg = await Maintenance.aggregate([
-          { $match: { date: { $gte: new Date(year, month - 1, 1), $lt: new Date(year, month, 1) } } },
-          { $lookup: { from: 'vehicles', localField: 'vehicle', foreignField: '_id', as: 'v' } },
-          { $unwind: '$v' },
-          { $match: { 'v.organization': vehicleDoc.organization } },
-          { $group: { _id: null, total: { $sum: '$cost' } } }
-        ]);
-        const maintTotal = MaintAgg.length > 0 ? MaintAgg[0].total : 0;
+        let maintTotal = 0;
+        if (vehicleDoc.organization) {
+          const MaintAgg = await Maintenance.aggregate([
+            { $match: { vehicle: { $in: scopedIds }, date: { $gte: rangeStart, $lt: rangeEnd } } },
+            { $group: { _id: null, total: { $sum: '$cost' } } }
+          ]);
+          maintTotal = MaintAgg.length > 0 ? MaintAgg[0].total : 0;
+        }
 
         const actualSpend = fuelTotal + maintTotal;
         const spendPercentage = (actualSpend / budget.totalLimit) * 100;
@@ -148,22 +153,23 @@ try {
           const msg = `Your ${month}/${year} budget has reached ${spendPercentage.toFixed(1)}% of its limit ($${budget.totalLimit}).`;
           const notifType = spendPercentage >= 100 ? 'Alert' : 'Info';
 
-          const managers = await User.find({
-            organization: vehicleDoc.organization,
-            role: { $in: ['Admin', 'Manager'] }
-          });
+          const recipients = budget.owner
+            ? [await User.findById(budget.owner).select('_id')]
+            : await User.find({
+                organization: vehicleDoc.organization,
+                role: { $in: ['Admin', 'Manager'] }
+              });
 
-          for (const manager of managers) {
-            // Deduplication: only send if no identical unread notification exists for this user this month
+          for (const recipient of recipients.filter(Boolean)) {
             const existingNotif = await Notification.findOne({
-              user: manager._id,
+              user: recipient._id,
               title,
               isRead: false,
-              createdAt: { $gte: new Date(year, month - 1, 1) }
+              createdAt: { $gte: rangeStart }
             });
 
             if (!existingNotif) {
-              await createNotification(manager._id, title, msg, notifType);
+              await createNotification(recipient._id, title, msg, notifType);
             }
           }
         }

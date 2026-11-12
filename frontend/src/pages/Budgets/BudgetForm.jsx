@@ -1,11 +1,13 @@
 import { Box, CircularProgress, Container, Grid, Paper, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Button from '../../components/ui/Button';
 import Select from '../../components/ui/Select';
 import TextField from '../../components/ui/TextField';
+import { AuthContext } from '../../context/AuthContext';
 import budgetService from '../../services/budget.service';
+import orgService from '../../services/org.service';
 
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -13,38 +15,47 @@ const BudgetForm = () => {
   const { id } = useParams();
   const isEditMode = Boolean(id);
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
+  const isAdmin = user?.role === 'Admin';
 
   const currentDate = new Date();
   const [formData, setFormData] = useState({
     month: currentDate.getMonth() + 1,
     year: currentDate.getFullYear(),
     totalLimit: '',
-    alertThreshold: 80
+    alertThreshold: 80,
+    organization: ''
   });
-  const [loading, setLoading] = useState(isEditMode);
+  const [organizations, setOrganizations] = useState([]);
+  const [loading, setLoading] = useState(isEditMode || isAdmin);
 
   useEffect(() => {
-    const fetchBudget = async () => {
+    const load = async () => {
       try {
-        const budget = await budgetService.getBudget(id);
-        setFormData({
-          month: budget.month,
-          year: budget.year,
-          totalLimit: budget.totalLimit,
-          alertThreshold: budget.alertThreshold
-        });
+        if (isAdmin) {
+          const orgs = await orgService.getOrganizations();
+          setOrganizations(orgs);
+        }
+        if (isEditMode) {
+          const budget = await budgetService.getBudget(id);
+          setFormData({
+            month: budget.month,
+            year: budget.year,
+            totalLimit: budget.totalLimit,
+            alertThreshold: budget.alertThreshold,
+            organization: budget.organization?._id || budget.organization || ''
+          });
+        }
       } catch (error) {
-        toast.error('Failed to load budget data');
-        navigate('/budgets');
+        toast.error(isEditMode ? 'Failed to load budget data' : 'Failed to load organizations');
+        if (isEditMode) navigate('/budgets');
       } finally {
         setLoading(false);
       }
     };
 
-    if (isEditMode) {
-      fetchBudget();
-    }
-  }, [id, isEditMode, navigate]);
+    load();
+  }, [id, isEditMode, isAdmin, navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -87,6 +98,23 @@ const BudgetForm = () => {
         </Typography>
         <Box component="form" onSubmit={handleSubmit}>
           <Grid container spacing={3}>
+            {isAdmin && (
+              <Grid size={{ xs: 12 }}>
+                <Select
+                  required
+                  id="organization"
+                  label="Organization"
+                  name="organization"
+                  value={formData.organization}
+                  onChange={handleChange}
+                  disabled={isEditMode}
+                  options={[
+                    { value: '', label: 'Select an organization' },
+                    ...organizations.map((org) => ({ value: org._id, label: org.name }))
+                  ]}
+                />
+              </Grid>
+            )}
             <Grid size={{ xs: 12, sm: 6 }}>
               <Select
                 required

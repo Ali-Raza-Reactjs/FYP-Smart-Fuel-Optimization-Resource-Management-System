@@ -63,7 +63,7 @@ const BudgetList = () => {
     <Box>
       <PageHeader
         title="Budget Management"
-        subtitle="Track monthly spending against organizational limits"
+        subtitle="Track monthly spending against your fuel budget"
         action={
           <Button
             startIcon={<AddIcon />}
@@ -109,6 +109,11 @@ const BudgetList = () => {
                     <Typography variant="h5" component="div" fontWeight="bold" gutterBottom>
                       {monthNames[budget.month - 1]} {budget.year}
                     </Typography>
+                    {budget.organization?.name && (
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        {budget.organization.name}
+                      </Typography>
+                    )}
 
                     <Box display="flex" justifyContent="space-between" mt={3} mb={1}>
                       <Typography variant="body2" color="text.secondary">

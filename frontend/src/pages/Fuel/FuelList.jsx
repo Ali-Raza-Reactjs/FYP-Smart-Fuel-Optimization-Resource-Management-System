@@ -74,8 +74,19 @@ const FuelList = () => {
     setDeleteConfirmOpen(false);
   };
 
+  const getReceiptUrl = (imgUrl) => {
+    if (!imgUrl) return '';
+    if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://') || imgUrl.startsWith('blob:')) {
+      return imgUrl;
+    }
+    const path = imgUrl.startsWith('/') ? imgUrl : `/${imgUrl}`;
+    return import.meta.env.MODE === 'development'
+      ? `http://localhost:5000${path}`
+      : path;
+  };
+
   const handleOpenReceipt = (imgUrl) => {
-    setSelectedReceipt(`http://localhost:5000${imgUrl}`);
+    setSelectedReceipt(getReceiptUrl(imgUrl));
     setReceiptOpen(true);
   };
 
@@ -89,7 +100,7 @@ const FuelList = () => {
   }
 
   const isDriver = user?.role === 'Driver';
-  const canManage = user?.role === 'Admin' || user?.role === 'Manager';
+  const canManage = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Individual';
 
   return (
     <Box>
@@ -213,7 +224,17 @@ const FuelList = () => {
             <DialogTitle sx={{ fontWeight: 'bold' }}>Receipt Image</DialogTitle>
             <DialogContent>
               {selectedReceipt && (
-                <img src={selectedReceipt} alt="Receipt" style={{ width: '100%', height: 'auto', borderRadius: '8px' }} />
+                <Box sx={{ textAlign: 'center' }}>
+                  <img
+                    src={selectedReceipt}
+                    alt="Receipt"
+                    style={{ width: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: '8px' }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      toast.error('Receipt image could not be loaded');
+                    }}
+                  />
+                </Box>
               )}
             </DialogContent>
           </Dialog>

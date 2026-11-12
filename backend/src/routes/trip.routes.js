@@ -20,6 +20,6 @@ router.route('/')
 router.route('/:id')
   .get(getTrip)
   .put(updateTrip)
-  .delete(authorize('Admin', 'Manager'), deleteTrip);
+  .delete(authorize('Admin', 'Manager', 'Individual'), deleteTrip);
 
 module.exports = router;

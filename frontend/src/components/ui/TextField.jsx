@@ -24,6 +24,7 @@ const TextField = ({
   rows = 1,
   disabled = false,
   sx = {},
+  slotProps,
   ...props
 }) => {
   return (
@@ -43,21 +44,27 @@ const TextField = ({
       multiline={multiline}
       rows={rows}
       disabled={disabled}
-      slotProps={{ input: {
-        startAdornment: startIcon ? (
-          <InputAdornment position="start">
-            {startIcon}
-          </InputAdornment>
-        ) : null,
-        endAdornment: endIcon ? (
-          <InputAdornment position="end">
-            {endIcon}
-          </InputAdornment>
-        ) : null,
-      } }}
-      sx={{
-        ...sx,
+      slotProps={{
+        ...slotProps,
+        input: {
+          startAdornment: startIcon ? (
+            <InputAdornment position="start">
+              {startIcon}
+            </InputAdornment>
+          ) : undefined,
+          endAdornment: endIcon ? (
+            <InputAdornment position="end">
+              {endIcon}
+            </InputAdornment>
+          ) : undefined,
+          ...slotProps?.input,
+        },
+        inputLabel: {
+          shrink: type === 'date' || type === 'datetime-local' ? true : undefined,
+          ...slotProps?.inputLabel,
+        },
       }}
+      sx={sx}
       {...props}
     />
   );

@@ -43,7 +43,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   ];
 
   const managerItems = [
-    { text: 'Budgets', icon: <AccountBalanceWalletIcon fontSize="small" />, path: '/budgets', roles: ['Admin', 'Manager'] },
+    { text: 'Budgets', icon: <AccountBalanceWalletIcon fontSize="small" />, path: '/budgets', roles: ['Admin', 'Manager', 'Individual'] },
     { text: 'Reports', icon: <AssessmentIcon fontSize="small" />, path: '/reports', roles: ['Admin', 'Manager'] },
   ];
 

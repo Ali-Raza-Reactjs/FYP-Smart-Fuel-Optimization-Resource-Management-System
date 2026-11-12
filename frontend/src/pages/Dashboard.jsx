@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Typography, Box, Grid, Card, CardContent, CircularProgress, Divider, List, ListItem, ListItemText, ListItemAvatar, Avatar, useTheme, Skeleton } from '@mui/material';
+import { Typography, Box, Grid, Card, CardContent, List, ListItem, ListItemText, ListItemAvatar, Avatar, useTheme, Skeleton, Alert, LinearProgress, Stack } from '@mui/material';
+import TextField from './../components/ui/TextField';
+import Select from './../components/ui/Select';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import PersonIcon from '@mui/icons-material/Person';
 import RouteIcon from '@mui/icons-material/Route';
@@ -74,11 +76,14 @@ const Dashboard = () => {
   const { user } = useContext(AuthContext);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const emptyFilters = { startDate: '', endDate: '', vehicleId: '' };
+  const [filters, setFilters] = useState(emptyFilters);
+  const hasActiveFilters = Boolean(filters.startDate || filters.endDate || filters.vehicleId);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const data = await dashboardService.getDashboardStats();
+        const data = await dashboardService.getDashboardStats(filters);
         setStats(data);
       } catch (error) {
         toast.error('Failed to load dashboard data');
@@ -88,7 +93,7 @@ const Dashboard = () => {
     };
 
     fetchStats();
-  }, []);
+  }, [filters]);
 
   const isOverviewUser = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Individual';
 
@@ -107,14 +112,100 @@ const Dashboard = () => {
 
   return (
     <Box>
-      <Box mb={4}>
-        <Typography variant="h4" component="h1" fontWeight="bold" color="text.primary" gutterBottom>
-          Dashboard Overview
-        </Typography>
-        <Typography variant="subtitle1" color="text.secondary">
-          Welcome back, {user?.name}! Here is your fleet's status for {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}.
-        </Typography>
-      </Box>
+      <Stack
+        direction={{ xs: 'column', md: 'row' }}
+        spacing={2}
+        justifyContent="space-between"
+        alignItems={{ xs: 'stretch', md: 'flex-end' }}
+        sx={{ mb: 3 }}
+      >
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography variant="h4" component="h1" fontWeight="bold" color="text.primary" gutterBottom>
+            Dashboard Overview
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            Welcome back, {user?.name}! Here is your fleet's status for {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}.
+          </Typography>
+        </Box>
+
+        {isOverviewUser && (
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.5}
+            sx={{
+              flexShrink: 0,
+              width: { xs: '100%', md: 'auto' },
+              bgcolor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 2,
+              p: 1.5,
+            }}
+          >
+            <TextField
+              type="date"
+              label="Start date"
+              value={filters.startDate}
+              onChange={(e) => setFilters((prev) => ({ ...prev, startDate: e.target.value }))}
+              slotProps={{ inputLabel: { shrink: true } }}
+              sx={{ minWidth: { sm: 160 } }}
+            />
+            <TextField
+              type="date"
+              label="End date"
+              value={filters.endDate}
+              onChange={(e) => setFilters((prev) => ({ ...prev, endDate: e.target.value }))}
+              slotProps={{ inputLabel: { shrink: true } }}
+              sx={{ minWidth: { sm: 160 } }}
+            />
+            <Select
+              id="vehicleFilter"
+              label="Vehicle"
+              name="vehicleId"
+              value={filters.vehicleId || 'all'}
+              onChange={(e) => setFilters((prev) => ({ ...prev, vehicleId: e.target.value === 'all' ? '' : e.target.value }))}
+              options={[
+                { value: 'all', label: 'All vehicles' },
+                ...(stats?.vehicles || []).map((v) => ({ value: String(v._id), label: v.label }))
+              ]}
+              sx={{ minWidth: { sm: 180 } }}
+            />
+            <Button
+              variant="outlined"
+              color="inherit"
+              onClick={() => setFilters(emptyFilters)}
+              disabled={!hasActiveFilters}
+              sx={{ whiteSpace: 'nowrap', height: 40, alignSelf: { xs: 'stretch', sm: 'center' } }}
+            >
+              Reset
+            </Button>
+          </Stack>
+        )}
+      </Stack>
+
+      {stats?.crisisMode && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          Crisis mode is on. Combine trips and avoid non-essential travel to conserve fuel.
+        </Alert>
+      )}
+
+      {isOverviewUser && stats?.currentBudget && (
+        <Card elevation={0} sx={{ mb: 3, p: 3, border: '1px solid', borderColor: 'divider' }}>
+          <Typography variant="subtitle2" color="text.secondary" fontWeight={600}>MONTHLY BUDGET</Typography>
+          <Typography variant="h5" fontWeight="bold" sx={{ mt: 1 }}>
+            ${(stats.currentBudget.actualSpend ?? 0).toFixed(2)} / ${stats.currentBudget.totalLimit.toFixed(2)}
+          </Typography>
+          <LinearProgress
+            variant="determinate"
+            value={Math.min(stats.currentBudget.percentUsed || 0, 100)}
+            color={(stats.currentBudget.percentUsed || 0) >= 100 ? 'error' : (stats.currentBudget.percentUsed || 0) >= (stats.currentBudget.alertThreshold || 80) ? 'warning' : 'primary'}
+            sx={{ mt: 2, height: 10, borderRadius: 5 }}
+          />
+          <Typography variant="caption" color="text.secondary">
+            {(stats.currentBudget.percentUsed || 0).toFixed(1)}% used
+          </Typography>
+        </Card>
+      )}
 
       {loading || !stats ? renderSkeletons() : (
         isOverviewUser ? (
@@ -221,8 +312,41 @@ const Dashboard = () => {
                         </BarChart>
                       </ResponsiveContainer>
                     </Box>
+                    <Box sx={{ width: '100%', height: 220, px: 3, pb: 3 }}>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>Fuel consumption (liters)</Typography>
+                      <ResponsiveContainer>
+                        <BarChart data={stats?.historicalSpend || []} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.palette.divider} />
+                          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
+                          <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
+                          <Tooltip formatter={(value) => [`${Number(value).toFixed(1)} L`, 'Liters']} />
+                          <Bar dataKey="fuelLiters" name="Liters" fill={theme.palette.info.main} radius={[4, 4, 0, 0]} barSize={32} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </Box>
                   </Card>
                 </Grid>
+
+                {(stats?.perVehicle || []).length > 0 && (
+                  <Grid size={{ xs: 12 }}>
+                    <Card elevation={0} sx={{ p: 3 }}>
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>Per-vehicle fuel use</Typography>
+                      <Box sx={{ width: '100%', height: 280 }}>
+                        <ResponsiveContainer>
+                          <BarChart data={stats.perVehicle} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.palette.divider} />
+                            <XAxis dataKey="name" tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
+                            <YAxis tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="liters" name="Liters" fill={theme.palette.primary.main} barSize={32} />
+                            <Bar dataKey="cost" name="Cost" fill={theme.palette.secondary.main} barSize={32} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </Box>
+                    </Card>
+                  </Grid>
+                )}
 
                 {stats?.latestTrip && (
                   <Grid size={{ xs: 12, md: 4 }}>

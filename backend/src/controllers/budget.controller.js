@@ -4,22 +4,50 @@ const FuelRecord = require('../models/FuelRecord');
 const Maintenance = require('../models/Maintenance');
 const Vehicle = require('../models/Vehicle');
 
-// Helper to calculate actual spend for a specific month/year/org
-const calculateActualSpend = async (orgId, month, year) => {
-  // 1. Get all vehicles for this org
-  const vehicles = await Vehicle.find({ organization: orgId }).select('_id');
-  const vehicleIds = vehicles.map(v => v._id);
+const getBudgetFilter = (user) => {
+  if (user.role === 'Individual') {
+    return { owner: user._id };
+  }
+  if (user.role === 'Admin') {
+    return { organization: { $exists: true, $ne: null } };
+  }
+  return { organization: user.organization };
+};
 
-  if (vehicleIds.length === 0) return 0;
+const getBudgetVehicleIds = async (budget, user) => {
+  if (budget.organization) {
+    const vehicles = await Vehicle.find({ organization: budget.organization }).select('_id');
+    return vehicles.map(v => v._id);
+  }
+  if (budget.owner) {
+    const vehicles = await Vehicle.find({ owner: budget.owner }).select('_id');
+    return vehicles.map(v => v._id);
+  }
+  if (user.role === 'Individual') {
+    const vehicles = await Vehicle.find({ owner: user._id }).select('_id');
+    return vehicles.map(v => v._id);
+  }
+  return [];
+};
 
-  // Create date range for the month
+const canAccessBudget = (budget, user) => {
+  if (user.role === 'Admin') return true;
+  if (budget.owner && budget.owner.toString() === user._id.toString()) return true;
+  if (budget.organization && user.organization && budget.organization.toString() === user.organization.toString()) {
+    return user.role === 'Manager' || user.role === 'Admin';
+  }
+  return false;
+};
+
+const calculateActualSpend = async (vehicleIds, month, year, includeMaintenance = true) => {
+  if (!vehicleIds.length) return 0;
+
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 1);
 
-  // 2. Aggregate Fuel Costs
   const fuelAgg = await FuelRecord.aggregate([
-    { 
-      $match: { 
+    {
+      $match: {
         vehicle: { $in: vehicleIds },
         date: { $gte: startDate, $lt: endDate }
       }
@@ -28,33 +56,31 @@ const calculateActualSpend = async (orgId, month, year) => {
   ]);
   const fuelCost = fuelAgg.length > 0 ? fuelAgg[0].total : 0;
 
-  // 3. Aggregate Maintenance Costs
+  if (!includeMaintenance) return fuelCost;
+
   const maintAgg = await Maintenance.aggregate([
-    { 
-      $match: { 
+    {
+      $match: {
         vehicle: { $in: vehicleIds },
         date: { $gte: startDate, $lt: endDate }
       }
     },
     { $group: { _id: null, total: { $sum: '$cost' } } }
   ]);
-  const maintCost = maintAgg.length > 0 ? maintAgg[0].total : 0;
-
-  return fuelCost + maintCost;
+  return fuelCost + (maintAgg.length > 0 ? maintAgg[0].total : 0);
 };
 
-// @desc    Get all budgets for org with actual spend
-// @route   GET /api/budgets
-// @access  Private (Admin/Manager)
 exports.getBudgets = async (req, res, next) => {
     let apiResponseModel = new ApiResponseModel();
 try {
-    const orgId = req.user.organization;
-    const budgets = await Budget.find({ organization: orgId }).sort({ year: -1, month: -1 });
+    const budgets = await Budget.find(getBudgetFilter(req.user))
+      .populate('organization', 'name')
+      .sort({ year: -1, month: -1 });
+    const includeMaintenance = req.user.role !== 'Individual';
 
-    // Calculate actual spend for each budget dynamically
     const enrichedBudgets = await Promise.all(budgets.map(async (budget) => {
-      const actualSpend = await calculateActualSpend(orgId, budget.month, budget.year);
+      const vehicleIds = await getBudgetVehicleIds(budget, req.user);
+      const actualSpend = await calculateActualSpend(vehicleIds, budget.month, budget.year, includeMaintenance);
       return {
         ...budget.toObject(),
         actualSpend
@@ -70,9 +96,6 @@ try {
   }
 };
 
-// @desc    Get single budget
-// @route   GET /api/budgets/:id
-// @access  Private (Admin/Manager)
 exports.getBudget = async (req, res, next) => {
     let apiResponseModel = new ApiResponseModel();
 try {
@@ -83,12 +106,18 @@ try {
       throw new Error('Budget not found');
     }
 
-    if (budget.organization.toString() !== req.user.organization.toString()) {
+    if (!canAccessBudget(budget, req.user)) {
       res.status(403);
       throw new Error('Not authorized to access this budget');
     }
 
-    const actualSpend = await calculateActualSpend(budget.organization, budget.month, budget.year);
+    const vehicleIds = await getBudgetVehicleIds(budget, req.user);
+    const actualSpend = await calculateActualSpend(
+      vehicleIds,
+      budget.month,
+      budget.year,
+      req.user.role !== 'Individual'
+    );
 
     apiResponseModel.status = true;
     apiResponseModel.msg = "Success";
@@ -103,20 +132,27 @@ try {
   }
 };
 
-// @desc    Create budget
-// @route   POST /api/budgets
-// @access  Private (Admin/Manager)
 exports.createBudget = async (req, res, next) => {
     let apiResponseModel = new ApiResponseModel();
 try {
-    req.body.organization = req.user.organization;
+    if (req.user.role === 'Individual') {
+      req.body.owner = req.user._id;
+      delete req.body.organization;
+    } else {
+      const organizationId = req.user.organization || req.body.organization;
+      if (!organizationId) {
+        res.status(400);
+        throw new Error('Select an organization before creating a budget');
+      }
+      req.body.organization = organizationId;
+      delete req.body.owner;
+    }
 
-    // Check if budget already exists for this month/year
-    const existing = await Budget.findOne({
-      organization: req.body.organization,
-      month: req.body.month,
-      year: req.body.year
-    });
+    const existing = await Budget.findOne(
+      req.body.owner
+        ? { owner: req.body.owner, month: req.body.month, year: req.body.year }
+        : { organization: req.body.organization, month: req.body.month, year: req.body.year }
+    );
 
     if (existing) {
       res.status(400);
@@ -134,9 +170,6 @@ try {
   }
 };
 
-// @desc    Update budget
-// @route   PUT /api/budgets/:id
-// @access  Private (Admin/Manager)
 exports.updateBudget = async (req, res, next) => {
     let apiResponseModel = new ApiResponseModel();
 try {
@@ -147,10 +180,13 @@ try {
       throw new Error('Budget not found');
     }
 
-    if (budget.organization.toString() !== req.user.organization.toString()) {
+    if (!canAccessBudget(budget, req.user)) {
       res.status(403);
       throw new Error('Not authorized to update this budget');
     }
+
+    delete req.body.owner;
+    delete req.body.organization;
 
     budget = await Budget.findByIdAndUpdate(req.params.id, req.body, {
       returnDocument: 'after',
@@ -167,9 +203,6 @@ try {
   }
 };
 
-// @desc    Delete budget
-// @route   DELETE /api/budgets/:id
-// @access  Private (Admin/Manager)
 exports.deleteBudget = async (req, res, next) => {
     let apiResponseModel = new ApiResponseModel();
 try {
@@ -180,7 +213,7 @@ try {
       throw new Error('Budget not found');
     }
 
-    if (budget.organization.toString() !== req.user.organization.toString()) {
+    if (!canAccessBudget(budget, req.user)) {
       res.status(403);
       throw new Error('Not authorized to delete this budget');
     }

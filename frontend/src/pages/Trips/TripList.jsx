@@ -78,7 +78,7 @@ const TripList = () => {
     return <PageLoader text="Loading trips..." />;
   }
 
-  const canManage = user?.role === 'Admin' || user?.role === 'Manager';
+  const canManage = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Individual';
 
   const filteredTrips = trips.filter(t =>
     (t.startLocation || '').toLowerCase().includes(searchTerm.toLowerCase()) ||

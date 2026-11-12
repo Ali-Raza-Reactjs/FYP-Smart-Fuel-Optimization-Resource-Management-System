@@ -48,6 +48,10 @@ const TripSchema = new mongoose.Schema({
   estimatedDuration: {
     type: Number // In Minutes
   },
+  isEssential: {
+    type: Boolean,
+    default: true
+  },
   status: {
     type: String,
     enum: ['Scheduled', 'In Transit', 'Completed', 'Cancelled'],

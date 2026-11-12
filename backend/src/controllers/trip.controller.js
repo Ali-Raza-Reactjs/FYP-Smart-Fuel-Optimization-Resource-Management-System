@@ -3,28 +3,8 @@ const Trip = require('../models/Trip');
 const Vehicle = require('../models/Vehicle');
 const Organization = require('../models/Organization');
 const { createNotification } = require('./notification.controller');
-
-// Helper to check access
-const checkVehicleAccess = async (vehicleId, user) => {
-  const vehicle = await Vehicle.findById(vehicleId);
-  if (!vehicle) {
-    throw new Error('Vehicle not found');
-  }
-  if (user.role === 'Manager') {
-    if (user.organization && vehicle.organization && vehicle.organization.toString() !== user.organization.toString()) {
-      throw new Error('Not authorized to access this vehicle');
-    }
-  } else if (user.role === 'Driver') {
-    if (vehicle.driver?.toString() !== user._id.toString()) {
-      throw new Error('Not authorized to access this vehicle');
-    }
-  } else if (user.role === 'Individual') {
-    if (vehicle.owner?.toString() !== user._id.toString()) {
-      throw new Error('Not authorized to access this vehicle');
-    }
-  }
-  return vehicle;
-};
+const { getVehicleForUser } = require('../utils/vehicleAccess');
+const { mapOsrmRoutes, pickRoute } = require('../utils/fuelEstimate');
 
 // @desc    Get all trips
 // @route   GET /api/trips
@@ -36,7 +16,6 @@ exports.getTrips = async (req, res, next) => {
 
     if (req.user.role === 'Manager') {
       if (req.user.organization) {
-        // Find all vehicles for the org, then find trips for those vehicles
         const vehicles = await Vehicle.find({ organization: req.user.organization }).select('_id');
         const vehicleIds = vehicles.map(v => v._id);
         query = Trip.find({ vehicle: { $in: vehicleIds } });
@@ -109,53 +88,50 @@ exports.createTrip = async (req, res, next) => {
 
     const vehicleDoc = await getVehicleForUser(vehicle, req.user);
 
-    // Assign driver
     if (req.user.role === 'Driver') {
       req.body.driver = req.user._id;
     } else if (!req.body.driver) {
       req.body.driver = vehicleDoc.driver || req.user._id;
     }
 
-    // SERVER-SIDE ROUTE CALCULATION (Overrides client-provided values)
+    let cheapestFuel = null;
+
     if (startCoordinates && endCoordinates) {
       try {
-        const osrmUrl = `http://router.project-osrm.org/route/v1/driving/${startCoordinates.lng},${startCoordinates.lat};${endCoordinates.lng},${endCoordinates.lat}?overview=full&geometries=geojson`;
+        const osrmUrl = `http://router.project-osrm.org/route/v1/driving/${startCoordinates.lng},${startCoordinates.lat};${endCoordinates.lng},${endCoordinates.lat}?overview=full&geometries=geojson&alternatives=true`;
         const response = await fetch(osrmUrl);
 
         if (response.ok) {
           const data = await response.json();
           if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
-            const route = data.routes[0];
-            const distanceKm = route.distance / 1000;
-            const durationMinutes = route.duration / 60;
+            const routes = mapOsrmRoutes(data.routes, vehicleDoc.fuelEfficiency);
+            const selected = pickRoute(routes, req.body.routeGeometry);
 
-            // Check for identical start and dest (Test 30)
-            if (distanceKm < 0.01) {
+            if (!selected) {
+              res.status(400);
+              throw new Error('Vehicle fuel efficiency must be greater than 0 km/liter');
+            }
+
+            if (selected.distance < 0.01) {
               res.status(400);
               throw new Error('Start and destination coordinates are too close or identical');
             }
 
-            const efficiency = vehicleDoc.fuelEfficiency || 8;
-            const estimatedFuel = (distanceKm * efficiency) / 100;
-
-            // Override client data
-            req.body.distance = Number(distanceKm.toFixed(2));
-            req.body.estimatedDuration = Math.round(durationMinutes);
-            req.body.estimatedFuel = Number(estimatedFuel.toFixed(2));
-            req.body.routeGeometry = JSON.stringify(route.geometry);
+            cheapestFuel = Math.min(...routes.map((route) => route.estimatedFuel));
+            req.body.distance = selected.distance;
+            req.body.estimatedDuration = selected.estimatedDuration;
+            req.body.estimatedFuel = selected.estimatedFuel;
+            req.body.routeGeometry = selected.geometry;
           } else {
             res.status(400);
             throw new Error('Could not calculate a route between these points');
           }
         }
       } catch (err) {
-        if (err.message === 'Start and destination coordinates are too close or identical' || err.message === 'Could not calculate a route between these points') {
+        if (err.message === 'Start and destination coordinates are too close or identical' || err.message === 'Could not calculate a route between these points' || err.message === 'Vehicle fuel efficiency must be greater than 0 km/liter') {
           throw err;
         }
         console.error('OSRM Calculation failed:', err);
-        // Fallback to client data if OSRM is down, or we could strict enforce and fail.
-        // The prompt says: "Remove any reliance on client-supplied fields - ignore them even if present"
-        // So we MUST fail if we can't calculate.
         res.status(500);
         throw new Error('Routing service unavailable. Cannot calculate distance and fuel securely.');
       }
@@ -165,55 +141,73 @@ exports.createTrip = async (req, res, next) => {
     }
 
     const trip = await Trip.create(req.body);
-
     const responseObj = trip.toObject();
 
-    // Crisis mode check
-    const org = vehicleDoc.organization ? await Organization.findById(vehicleDoc.organization) : null;
-    if (org && org.crisisMode && req.body.endLocation && req.body.startTime) {
-      const tripStartTime = new Date(req.body.startTime);
-      const threeDaysLater = new Date(tripStartTime.getTime() + (3 * 24 * 60 * 60 * 1000));
-      const threeDaysBefore = new Date(tripStartTime.getTime() - (3 * 24 * 60 * 60 * 1000));
-
-      const vehicles = await Vehicle.find({ organization: org._id }).select('_id');
-      const vehicleIds = vehicles.map(v => v._id);
-
-      const overlapping = await Trip.findOne({
-        _id: { $ne: trip._id },
-        vehicle: { $in: vehicleIds },
-        endLocation: req.body.endLocation, // Naive string match for simplicity as requested
-        startTime: {
-          $gte: threeDaysBefore,
-          $lte: threeDaysLater
-        }
-      });
-
-      if (overlapping) {
-        responseObj.suggestion = 'Crisis Mode Alert: Another trip to this destination is scheduled within 3 days. Consider combining trips to conserve fuel!';
-        await createNotification(req.user._id, 'Crisis Mode Recommendation', responseObj.suggestion, 'Alert');
+    try {
+      if (cheapestFuel != null && req.body.estimatedFuel > cheapestFuel * 1.1) {
+        const msg = `This route uses ${req.body.estimatedFuel} L, about ${(((req.body.estimatedFuel / cheapestFuel) - 1) * 100).toFixed(0)}% more than the most fuel-efficient option (${cheapestFuel} L).`;
+        responseObj.inefficientRoute = msg;
+        await createNotification(req.user._id, 'Inefficient Trip', msg, 'Alert');
       }
-    } else if (req.user.role === 'Individual' && req.body.endLocation && req.body.startTime) {
-      const tripStartTime = new Date(req.body.startTime);
-      const threeDaysLater = new Date(tripStartTime.getTime() + (3 * 24 * 60 * 60 * 1000));
-      const threeDaysBefore = new Date(tripStartTime.getTime() - (3 * 24 * 60 * 60 * 1000));
+    } catch (notifyErr) {
+      console.error('Error creating inefficient trip notification:', notifyErr);
+    }
 
-      const vehicles = await Vehicle.find({ owner: req.user._id }).select('_id');
-      const vehicleIds = vehicles.map(v => v._id);
+    try {
+      const org = vehicleDoc.organization ? await Organization.findById(vehicleDoc.organization) : null;
+      if (org && org.crisisMode && req.body.endLocation && req.body.startTime) {
+        const tripStartTime = new Date(req.body.startTime);
+        const threeDaysLater = new Date(tripStartTime.getTime() + (3 * 24 * 60 * 60 * 1000));
+        const threeDaysBefore = new Date(tripStartTime.getTime() - (3 * 24 * 60 * 60 * 1000));
 
-      const overlapping = await Trip.findOne({
-        _id: { $ne: trip._id },
-        vehicle: { $in: vehicleIds },
-        endLocation: req.body.endLocation,
-        startTime: {
-          $gte: threeDaysBefore,
-          $lte: threeDaysLater
+        const vehicles = await Vehicle.find({ organization: org._id }).select('_id');
+        const vehicleIds = vehicles.map(v => v._id);
+
+        const overlapping = await Trip.findOne({
+          _id: { $ne: trip._id },
+          vehicle: { $in: vehicleIds },
+          endLocation: req.body.endLocation,
+          startTime: {
+            $gte: threeDaysBefore,
+            $lte: threeDaysLater
+          }
+        });
+
+        if (overlapping) {
+          responseObj.suggestion = 'Crisis Mode Alert: Another trip to this destination is scheduled within 3 days. Consider combining trips to conserve fuel!';
+          await createNotification(req.user._id, 'Crisis Mode Recommendation', responseObj.suggestion, 'Alert');
         }
-      });
 
-      if (overlapping) {
-        responseObj.suggestion = 'Trip Optimization Notice: Another trip to this destination is scheduled within 3 days. Consider combining trips to conserve fuel!';
-        await createNotification(req.user._id, 'Trip Optimization Notice', responseObj.suggestion, 'Info');
+        if (req.body.isEssential === false) {
+          const skipMsg = 'Crisis Mode: this trip is marked non-essential. Avoid non-essential travel to conserve fuel.';
+          responseObj.suggestion = [responseObj.suggestion, skipMsg].filter(Boolean).join(' ');
+          await createNotification(req.user._id, 'Crisis Mode Recommendation', skipMsg, 'Alert');
+        }
+      } else if (req.user.role === 'Individual' && req.body.endLocation && req.body.startTime) {
+        const tripStartTime = new Date(req.body.startTime);
+        const threeDaysLater = new Date(tripStartTime.getTime() + (3 * 24 * 60 * 60 * 1000));
+        const threeDaysBefore = new Date(tripStartTime.getTime() - (3 * 24 * 60 * 60 * 1000));
+
+        const vehicles = await Vehicle.find({ owner: req.user._id }).select('_id');
+        const vehicleIds = vehicles.map(v => v._id);
+
+        const overlapping = await Trip.findOne({
+          _id: { $ne: trip._id },
+          vehicle: { $in: vehicleIds },
+          endLocation: req.body.endLocation,
+          startTime: {
+            $gte: threeDaysBefore,
+            $lte: threeDaysLater
+          }
+        });
+
+        if (overlapping) {
+          responseObj.suggestion = 'Trip Optimization Notice: Another trip to this destination is scheduled within 3 days. Consider combining trips to conserve fuel!';
+          await createNotification(req.user._id, 'Trip Optimization Notice', responseObj.suggestion, 'Info');
+        }
       }
+    } catch (crisisErr) {
+      console.error('Error creating crisis recommendation:', crisisErr);
     }
 
     apiResponseModel.status = true;
@@ -221,7 +215,6 @@ exports.createTrip = async (req, res, next) => {
     apiResponseModel.data = responseObj;
     return res.status(201).json(apiResponseModel);
   } catch (error) {
-    // Keep the status set in the try block if it exists
     if (!res.statusCode || res.statusCode === 200) res.status(400);
     next(error);
   }
@@ -242,7 +235,6 @@ exports.updateTrip = async (req, res, next) => {
 
     await getVehicleForUser(trip.vehicle, req.user);
 
-    // Drivers can only update the status of their trips
     if (req.user.role === 'Driver') {
       const allowedUpdates = ['status', 'endTime'];
       const updates = Object.keys(req.body);
@@ -271,7 +263,7 @@ exports.updateTrip = async (req, res, next) => {
 
 // @desc    Delete trip
 // @route   DELETE /api/trips/:id
-// @access  Private (Admin/Manager)
+// @access  Private (Admin/Manager/Individual)
 exports.deleteTrip = async (req, res, next) => {
   let apiResponseModel = new ApiResponseModel();
   try {
