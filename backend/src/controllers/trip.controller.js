@@ -2,14 +2,36 @@ const { ApiResponseModel } = require("../utils/classes");
 const Trip = require('../models/Trip');
 const Vehicle = require('../models/Vehicle');
 const Organization = require('../models/Organization');
-const { getVehicleForUser } = require('../utils/vehicleAccess');
+const { createNotification } = require('./notification.controller');
+
+// Helper to check access
+const checkVehicleAccess = async (vehicleId, user) => {
+  const vehicle = await Vehicle.findById(vehicleId);
+  if (!vehicle) {
+    throw new Error('Vehicle not found');
+  }
+  if (user.role === 'Manager') {
+    if (user.organization && vehicle.organization && vehicle.organization.toString() !== user.organization.toString()) {
+      throw new Error('Not authorized to access this vehicle');
+    }
+  } else if (user.role === 'Driver') {
+    if (vehicle.driver?.toString() !== user._id.toString()) {
+      throw new Error('Not authorized to access this vehicle');
+    }
+  } else if (user.role === 'Individual') {
+    if (vehicle.owner?.toString() !== user._id.toString()) {
+      throw new Error('Not authorized to access this vehicle');
+    }
+  }
+  return vehicle;
+};
 
 // @desc    Get all trips
 // @route   GET /api/trips
 // @access  Private (Admin/Manager/Driver)
 exports.getTrips = async (req, res, next) => {
-    let apiResponseModel = new ApiResponseModel();
-try {
+  let apiResponseModel = new ApiResponseModel();
+  try {
     let query;
 
     if (req.user.role === 'Manager') {
@@ -49,8 +71,8 @@ try {
 // @route   GET /api/trips/:id
 // @access  Private
 exports.getTrip = async (req, res, next) => {
-    let apiResponseModel = new ApiResponseModel();
-try {
+  let apiResponseModel = new ApiResponseModel();
+  try {
     const trip = await Trip.findById(req.params.id)
       .populate('vehicle')
       .populate('driver', 'name email');
@@ -76,17 +98,17 @@ try {
 // @route   POST /api/trips
 // @access  Private
 exports.createTrip = async (req, res, next) => {
-    let apiResponseModel = new ApiResponseModel();
-try {
+  let apiResponseModel = new ApiResponseModel();
+  try {
     const { vehicle, startCoordinates, endCoordinates } = req.body;
-    
+
     if (!vehicle) {
       res.status(400);
       throw new Error('Vehicle ID is required');
     }
 
     const vehicleDoc = await getVehicleForUser(vehicle, req.user);
-    
+
     // Assign driver
     if (req.user.role === 'Driver') {
       req.body.driver = req.user._id;
@@ -99,14 +121,14 @@ try {
       try {
         const osrmUrl = `http://router.project-osrm.org/route/v1/driving/${startCoordinates.lng},${startCoordinates.lat};${endCoordinates.lng},${endCoordinates.lat}?overview=full&geometries=geojson`;
         const response = await fetch(osrmUrl);
-        
+
         if (response.ok) {
           const data = await response.json();
           if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
             const route = data.routes[0];
             const distanceKm = route.distance / 1000;
             const durationMinutes = route.duration / 60;
-            
+
             // Check for identical start and dest (Test 30)
             if (distanceKm < 0.01) {
               res.status(400);
@@ -138,8 +160,8 @@ try {
         throw new Error('Routing service unavailable. Cannot calculate distance and fuel securely.');
       }
     } else {
-       res.status(400);
-       throw new Error('startCoordinates and endCoordinates are required to calculate distance securely');
+      res.status(400);
+      throw new Error('startCoordinates and endCoordinates are required to calculate distance securely');
     }
 
     const trip = await Trip.create(req.body);
@@ -147,12 +169,12 @@ try {
     const responseObj = trip.toObject();
 
     // Crisis mode check
-    const org = await Organization.findById(vehicleDoc.organization);
+    const org = vehicleDoc.organization ? await Organization.findById(vehicleDoc.organization) : null;
     if (org && org.crisisMode && req.body.endLocation && req.body.startTime) {
       const tripStartTime = new Date(req.body.startTime);
       const threeDaysLater = new Date(tripStartTime.getTime() + (3 * 24 * 60 * 60 * 1000));
       const threeDaysBefore = new Date(tripStartTime.getTime() - (3 * 24 * 60 * 60 * 1000));
-      
+
       const vehicles = await Vehicle.find({ organization: org._id }).select('_id');
       const vehicleIds = vehicles.map(v => v._id);
 
@@ -167,7 +189,30 @@ try {
       });
 
       if (overlapping) {
-        responseObj.suggestion = 'Combine trips! Another trip to this destination is scheduled within 3 days.';
+        responseObj.suggestion = 'Crisis Mode Alert: Another trip to this destination is scheduled within 3 days. Consider combining trips to conserve fuel!';
+        await createNotification(req.user._id, 'Crisis Mode Recommendation', responseObj.suggestion, 'Alert');
+      }
+    } else if (req.user.role === 'Individual' && req.body.endLocation && req.body.startTime) {
+      const tripStartTime = new Date(req.body.startTime);
+      const threeDaysLater = new Date(tripStartTime.getTime() + (3 * 24 * 60 * 60 * 1000));
+      const threeDaysBefore = new Date(tripStartTime.getTime() - (3 * 24 * 60 * 60 * 1000));
+
+      const vehicles = await Vehicle.find({ owner: req.user._id }).select('_id');
+      const vehicleIds = vehicles.map(v => v._id);
+
+      const overlapping = await Trip.findOne({
+        _id: { $ne: trip._id },
+        vehicle: { $in: vehicleIds },
+        endLocation: req.body.endLocation,
+        startTime: {
+          $gte: threeDaysBefore,
+          $lte: threeDaysLater
+        }
+      });
+
+      if (overlapping) {
+        responseObj.suggestion = 'Trip Optimization Notice: Another trip to this destination is scheduled within 3 days. Consider combining trips to conserve fuel!';
+        await createNotification(req.user._id, 'Trip Optimization Notice', responseObj.suggestion, 'Info');
       }
     }
 
@@ -186,8 +231,8 @@ try {
 // @route   PUT /api/trips/:id
 // @access  Private
 exports.updateTrip = async (req, res, next) => {
-    let apiResponseModel = new ApiResponseModel();
-try {
+  let apiResponseModel = new ApiResponseModel();
+  try {
     let trip = await Trip.findById(req.params.id);
 
     if (!trip) {
@@ -202,7 +247,7 @@ try {
       const allowedUpdates = ['status', 'endTime'];
       const updates = Object.keys(req.body);
       const isValidOperation = updates.every(update => allowedUpdates.includes(update));
-      
+
       if (!isValidOperation) {
         res.status(403);
         throw new Error('Drivers can only update trip status and end time');
@@ -228,8 +273,8 @@ try {
 // @route   DELETE /api/trips/:id
 // @access  Private (Admin/Manager)
 exports.deleteTrip = async (req, res, next) => {
-    let apiResponseModel = new ApiResponseModel();
-try {
+  let apiResponseModel = new ApiResponseModel();
+  try {
     const trip = await Trip.findById(req.params.id);
 
     if (!trip) {

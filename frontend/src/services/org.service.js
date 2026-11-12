@@ -38,12 +38,20 @@ const deleteOrganization = async (id) => {
   return response.data;
 };
 
+// Toggle Crisis Mode
+const toggleCrisisMode = async (id) => {
+  const { response } = await fetchMethod(() => api.put(`${API_URL}/${id}/crisis`));
+  if (!response?.status) throw new Error(response?.msg || response?.message || 'Request failed');
+  return response.data;
+};
+
 const orgService = {
   getOrganizations,
   getOrganization,
   createOrganization,
   updateOrganization,
-  deleteOrganization
+  deleteOrganization,
+  toggleCrisisMode
 };
 
 export default orgService;

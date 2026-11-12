@@ -54,12 +54,24 @@ const updateProfile = async (userData) => {
   return response.data;
 };
 
+// Reset password (Forgot password)
+const resetPassword = async (email, newPassword) => {
+  const { response } = await fetchMethod(() =>
+    api.post("/auth/reset-password", { email, newPassword }),
+  );
+  if (!response?.status) {
+    throw new Error(response?.msg || response?.message || "Password reset failed");
+  }
+  return response;
+};
+
 const authService = {
   register,
   login,
   logout,
   getProfile,
   updateProfile,
+  resetPassword,
 };
 
 export default authService;

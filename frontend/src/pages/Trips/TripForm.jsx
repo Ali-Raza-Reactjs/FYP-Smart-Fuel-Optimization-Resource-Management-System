@@ -131,8 +131,11 @@ const TripForm = () => {
         await tripService.updateTrip(id, formData);
         toast.success('Trip updated successfully');
       } else {
-        await tripService.createTrip(formData);
+        const result = await tripService.createTrip(formData);
         toast.success('Trip scheduled successfully');
+        if (result?.suggestion) {
+          toast.warn(result.suggestion, { autoClose: 8000 });
+        }
       }
       navigate('/trips');
     } catch (error) {

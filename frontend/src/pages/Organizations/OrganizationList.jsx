@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { Box, Typography, TableRow, TableCell, IconButton, CircularProgress } from '@mui/material';
+import { Box, Typography, TableRow, TableCell, IconButton, CircularProgress, Chip } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -57,6 +57,17 @@ const OrganizationList = () => {
     setDeleteConfirmOpen(false);
   };
 
+  const handleToggleCrisis = async (id) => {
+    try {
+      const res = await orgService.toggleCrisisMode(id);
+      toast.success(`Crisis Mode ${res.crisisMode ? 'Enabled' : 'Disabled'}`);
+      setOrganizations(organizations.map(org => org._id === id ? { ...org, crisisMode: res.crisisMode } : org));
+    } catch (error) {
+      const message = error.message || error.response?.data?.message || 'Failed to toggle Crisis Mode';
+      toast.error(message);
+    }
+  };
+
   if (loading) {
     return <PageLoader text="Loading organizations..." />;
   }
@@ -93,6 +104,7 @@ const OrganizationList = () => {
           { label: 'Contact Email' },
           { label: 'Contact Phone' },
           { label: 'Address' },
+          { label: 'Crisis Mode', align: 'center' },
           ...(isAdmin ? [{ label: 'Actions', align: 'center' }] : [])
         ]}
         searchTerm={searchTerm}
@@ -101,7 +113,7 @@ const OrganizationList = () => {
       >
         {filteredOrganizations.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={isAdmin ? 5 : 4} align="center" sx={{ p: 0 }}>
+            <TableCell colSpan={isAdmin ? 6 : 5} align="center" sx={{ p: 0 }}>
               <EmptyState
                 icon={BusinessIcon}
                 title="No organizations found"
@@ -121,6 +133,16 @@ const OrganizationList = () => {
                 <Typography variant="body2" sx={{ maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {org.address}
                 </Typography>
+              </TableCell>
+              <TableCell align="center">
+                <Chip
+                  label={org.crisisMode ? 'Crisis Active' : 'Normal'}
+                  color={org.crisisMode ? 'error' : 'default'}
+                  size="small"
+                  onClick={isAdmin ? () => handleToggleCrisis(org._id) : undefined}
+                  sx={{ cursor: isAdmin ? 'pointer' : 'default', fontWeight: 600 }}
+                  title={isAdmin ? "Click to toggle Crisis Mode" : undefined}
+                />
               </TableCell>
               {isAdmin && (
                 <TableCell align="center">
