@@ -33,11 +33,11 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     { text: 'Dashboard', icon: <DashboardIcon fontSize="small" />, path: '/dashboard', roles: ['Admin', 'Individual', 'Manager', 'Driver'] },
     { text: 'Vehicles', icon: <DirectionsCarIcon fontSize="small" />, path: '/vehicles', roles: ['Admin', 'Individual', 'Manager', 'Driver'] },
     { text: 'Trips', icon: <RouteIcon fontSize="small" />, path: '/trips', roles: ['Admin', 'Individual', 'Manager', 'Driver'] },
+    { text: 'Reports', icon: <AssessmentIcon fontSize="small" />, path: '/reports', roles: ['Admin', 'Individual', 'Manager'] },
   ];
 
   const managerItems = [
     { text: 'Budgets', icon: <AccountBalanceWalletIcon fontSize="small" />, path: '/budgets', roles: ['Admin', 'Manager'] },
-    { text: 'Reports', icon: <AssessmentIcon fontSize="small" />, path: '/reports', roles: ['Admin', 'Manager'] },
   ];
 
   const adminItems = [

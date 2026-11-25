@@ -29,7 +29,7 @@ const Reports = () => {
       await reportService.exportFinancialReport(startDate, endDate);
       toast.success('Report downloaded successfully');
     } catch (error) {
-      toast.error('Failed to generate report');
+      toast.error(error.message || 'Failed to generate report');
     } finally {
       setLoading(false);
     }
